@@ -1,0 +1,204 @@
+
+
+###############################  Startup
+#[
+
+
+###Big Four
+#[
+atom_style  hybrid sphere angle    
+units		si 
+processors	* * 1 
+comm_modify	vel yes 
+#]
+
+###Settings
+#[  
+variable d equal 0.001
+variable numElastics equal 70
+variable startNumberofGrains equal 10
+variable grainsBetweenElastics equal 2
+variable squish equal 0.2*$d
+variable Eelastic equal 0.96*10^6 #This is the target young's modulus for the elastica    
+variable dens equal 800                                                                                                                
+#]
+
+###Constants
+#[
+
+#Grain-Grain/Grain-Wall 
+variable coeffric equal 0
+variable rolfric equal 0.1*${coeffric}
+variable Eyoung equal 10^4 
+variable restitution equal 0.45
+variable poissons equal 0.5
+### kt will be set to NULL which is 4E/[2(2-nu)(1+nu)]
+variable kr equal (4.0*${Eyoung})/(2.0*(2.0-${poissons})*(1.0+${poissons}))
+variable xscaling equal 1
+variable gammar equal 0
+
+
+#Elastic-Elastic Stretching
+variable r0e   equal ${d} 
+variable rloe  equal ${r0e}*0.9 
+variable rhie  equal ${r0e}*1.1
+variable Kel    equal ${Eelastic}*${d}/2
+
+#Elastic-Elastic Bending
+variable Bel equal ${Eelastic}*(${d}^3)/12
+#]
+
+###Times
+#[
+#There are a couple of tricks that I use to set the amount of time that a simulation will take to run. You do not have to do it like this, but I have found that 
+#It is easier to change things quickly and intuitively this way. You feel free, though, to create your own method of operation
+variable compressionTime equal 4 #First I set the number of nondimensional time units I want the compression of the elastica to take. This would be seconds if the units were "si"
+
+variable speed equal 0.001 #I can use this to keep the amount of time that the simulation logs constant but increase the number of timesteps that I simulate. The lower this number is, the more "fine-grained" the simulatioln will be 
+variable out equal 10000/${speed} #This is the number of timesteps in one nondimensional time unit
+variable thermoOut equal ${out}*0.1 #This is how often I output the thermo information
+variable dout equal ${out}*.1 #This is how often I create a dump file
+variable infoOut equal ${out}*.01
+variable r1 equal ${out}*${compressionTime} #This is how many timesteps I will run the simulation for 
+variable time equal 0.0001*${speed} #This is the length of a timestep in nondimensional time units 
+#]
+
+###Geometry
+#[
+variable xlo equal -.12
+variable xhi equal .12 
+variable ylo equal -${d}/2 #These two variables are the dimensions of the simulation box. I make it one grain diameter thick to keep the elastica in plane 
+variable yhi equal ${d}/2 #^
+variable zlo equal -.12
+variable zhi equal .12
+
+region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} #Create the space where the simulation will take place 
+create_box	1 simulationStation bond/types 1 extra/bond/per/atom 2 angle/types 1 extra/angle/per/atom 3 #There will be one atom in the simulation box, one type of bond, 
+#each atom will participate in 2 bonds (left and right neighbor), there will be one type of angle, each atom will participate in 3 angles
+change_box	all boundary f f f #The boundaries of the simulation box will be fixed 
+#]
+
+###Integration stuff
+#[
+variable neighborSize equal 1.2*${d}
+neighbor	${neighborSize} bin 
+neigh_modify	delay 0 every 1 check yes
+fix		integration all nve/sphere
+#]
+
+### Setup the contacts
+#[
+pair_style granular 
+pair_coeff  * *  &
+	hertz/material ${Eyoung} ${restitution} ${poissons} tangential mindlin NULL ${xscaling} ${coeffric} rolling sds ${kr} ${gammar} ${rolfric} twisting marshall damping tsuji 
+fix box all wall/gran/region granular &
+	hertz/material ${Eyoung} ${restitution} ${poissons} tangential mindlin NULL ${xscaling} ${coeffric} &
+	rolling sds ${kr} ${gammar} ${rolfric} twisting marshall damping tsuji &
+	region simulationStation
+
+special_bonds   lj/coul 0 1.0 1.0 
+bond_style   harmonic 
+bond_coeff   1 ${Kel} ${r0e} 
+
+angle_style   cosine 
+angle_coeff   1 ${Bel} 
+
+#]
+
+### Thermo And Dump
+#[
+
+thermo_style custom step atoms time
+thermo_modify	lost warn
+thermo		${thermoOut}
+timestep	${time}
+
+compute stress all stress/atom NULL
+compute contacts all contact/atom
+variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)
+compute bendingE all pe/atom angle
+compute stretchingE all pe/atom bond
+compute totBendE all pe angle 
+compute totStretchE all pe bond
+variable totBEV equal c_totBendE
+variable totSEV equal c_totStretchE
+
+
+dump		lump all custom ${dout} out*.dump id type radius x y z fx fy fz v_pressure c_contacts c_bendingE c_stretchingE
+dump_modify	lump pad 11
+
+#]
+
+#]
+
+variable i loop ${numElastics}
+label iter
+
+###############################  Make the elastic
+#[
+
+
+variable numelastic equal ${startNumberofGrains}+4+${grainsBetweenElastics}*($i-1)
+variable insert loop ${numelastic} 
+label insertloop
+variable xins equal 0
+variable yins equal 0
+variable zins equal -${d}*${numelastic}/2+${d}/2+${d}*(${insert}-1)
+create_atoms 1 single ${xins} ${yins} ${zins} 
+next insert
+jump SELF insertloop
+
+group elastic type 1 
+set type 1 diameter ${d} 
+set type * density ${dens} 
+variable mass equal mass(elastic) #find the mass of the elastic
+variable visc equal 0.01*9.8*${mass} #Calculate the maximum value of the viscosity
+fix camp1 all viscous ${visc}
+
+fix		grav elastic gravity .0000001 vector 1 0 0 #Perturb
+
+create_bonds   many elastic elastic 1 ${rloe} ${rhie} 
+
+variable numGrainsInElasticMinus2 equal (${numelastic}-2)
+variable bend loop ${numGrainsInElasticMinus2} 
+label bendloop
+variable atom1id equal ${bend} 
+variable atom2id equal ${atom1id}+1
+variable atom3id equal ${atom1id}+2
+create_bonds   single/angle 1 ${atom1id} ${atom2id} ${atom3id} 
+next bend
+jump SELF bendloop
+
+#]
+
+
+###############################  Squish the elastic
+#[
+
+#I will grab four from the d/2 and 2 from the d to make them clamped the same amt
+group		endbottomgroup  id 1
+group		endbottomgroup  id 2
+variable nem1 equal ${numelastic}-1
+group		endtopgroup id ${numelastic}
+group		endtopgroup id ${nem1}
+
+variable bottomGroupVelocity equal  ${squish}/(2*${compressionTime})
+variable topGroupVelocity    equal -${squish}/(2*${compressionTime})
+fix zbot endbottomgroup  move linear 0 0 ${bottomGroupVelocity}  
+fix ztop endtopgroup     move linear 0 0 ${topGroupVelocity}
+
+variable t equal time
+variable length equal ${d}*(${numelastic}-4)
+variable eps equal ${length}-(xcm(endtopgroup,z)-xcm(endbottomgroup,z)-2*${d})
+variable idofcenter equal (${numelastic}-4)/2
+variable xofcenter equal x[${idofcenter}]
+fix Eout all print ${infoOut} "${t} ${eps} ${xofcenter} ${totBEV} ${totSEV}" file ${length}_time_strain_xofcenter_BE_SE.out
+run ${r1} 
+#]
+
+delete_atoms group all
+unfix Eout
+
+
+next i
+jump SELF iter
