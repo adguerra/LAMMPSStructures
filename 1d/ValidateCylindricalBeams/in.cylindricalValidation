@@ -1,37 +1,68 @@
 
 
+
+#Hopefully this is the first LAMMPS input file that you are diving into in this repository, so first off, welcome!
+#I will be HEAVILY commenting this file, especially in the parts of the file where the elastic structure is built, 
+#but I also hope that if you are new to LAMMPS, you can get a general sense for how these files work, at least in my 
+#understanding of them. I recommend using VS code to view this file, as it has a LAMMPS plugin that colors everything 
+#And provides a sectioning mechanism. 
+
+#The layout of this file is I start up the file right off the bat with some general settings that LAMMPS requires,
+#then I set a couple of variables that I might want to change for different copies of this file (for instance, if I 
+#wanted to try running this again with beams of different elastic moduli). I will set some constants for the pair potentials
+#And the geometry, define the kind of integration, and specify a certain kind of output. My output files are quite involved
+#as we are asking LAMMPS for something that it is not used to providing. Then I will place the particles and glue them together
+#with a stretching potential and a bending potential to create the beam, and finally I will compress it. 
+
+#In this specific file I have a loop which creates a beam, compresses it, deletes that beam, and then creates another slightly 
+#longer beam...etc. This is so that I can output multiple files which have all of the information that we need to 
+#output the buckling strain for multiple aspect ratios of beams.
+
+#I will use ["elastics" and "beams"] interchangeably and ["particles" "grains" and "atoms"] interchangeably. Also, the interparticle
+#distance which I call q in the PDF in the the LAMMPSStructures directory I will call here, and LAMMPS calls, confusingly, r
+
 ###############################  Startup
 #[
 
 
 ###Big Four
 #[
-atom_style  hybrid sphere angle    
-units		si 
-processors	* * 1 
-comm_modify	vel yes 
+#There are a bunch of random settings that you have to set every time you run a lammps file. These are the first four you have to include
+atom_style  hybrid sphere angle    #This means that we will have a hybrid kind of particle. Our particles are spheres (they have a radius mass
+#and anglular momentum) which is necessary to use a "granular" pair style. They also, however, have "bonds" between them, which gives us our 
+#Stretching energy, and they have "angles" between them, which gives us our bending enegy. You might ask why don't we have to say 
+#"atom_style hybrid sphere bond angle", well actually, when you include "angle" lammps automatically knows that you will want to include "bonds".  
+units		si  # we will use si units (meters, kg, N, etc.) check the LAMMPS documentation for a full list
+processors	* * 1 # I will run this on one processor
+comm_modify	vel yes # Integration detail, this setting is necessary for "granular" simulations, which we are doing because we want to use 
+#granular contact mechanics
 #]
 
 ###Settings
 #[  
-variable d equal 0.001
-variable numElastics equal 4
-variable startNumberofGrains equal 74
-variable grainsBetweenElastics equal 2
-variable squish equal 0.2*$d
-variable Eelastic equal 0.96*10^6 #This is the target young's modulus for the elastica    
-variable dens equal 800                                                                                                                
+variable d equal 0.001 #This will be the diameter of the particles in our beam
+variable numElastics equal 4 #This is the number of loops in this simulation, that is, the number of beams that we will create and compress
+variable startNumberofGrains equal 74 #The number of particles in the first beam
+variable grainsBetweenElastics equal 2 #First column will have 74 particles, second will have 76, etc.
+variable squish equal 0.2*$d #The amount that I will compress the beams
+variable Eelastic equal 0.96*10^6 #This is the target young's modulus for the elastica, which we will use to define the pair potentials
+variable dens equal 800 #Density of our particles                                                                                                            
 #]
 
 ###Constants
 #[
 
+#I have three sets of constants here, first set will be used to set the contact mechanics, second will determine the stretching
+#and the last will determine the bending of the beam. I will not explain all of these in detail here, I would suggest looking at the LAMMPS
+#documentation for "pair_style granular", "bond_style harmonic", "create_bonds", and "angle_style cosine" as well as the PDF in 
+#the LAMMPSStructures directory.
+
 #Grain-Grain/Grain-Wall 
-variable coeffric equal 0
-variable rolfric equal 0.1*${coeffric}
-variable Eyoung equal 10^4 
-variable restitution equal 0.45
-variable poissons equal 0.5
+variable coeffric equal 0 #static friction 
+variable rolfric equal 0.1*${coeffric} #rolling friction
+variable Eyoung equal 10^4 #Youngs modulus of the contact interaction
+variable restitution equal 0.45 #Restitution coefficient
+variable poissons equal 0.5 #poissons ratio 
 ### kt will be set to NULL which is 4E/[2(2-nu)(1+nu)]
 variable kr equal (4.0*${Eyoung})/(2.0*(2.0-${poissons})*(1.0+${poissons}))
 variable xscaling equal 1
@@ -39,47 +70,50 @@ variable gammar equal 0
 
 
 #Elastic-Elastic Stretching
-variable r0e   equal ${d} 
-variable rloe  equal ${r0e}*0.9 
-variable rhie  equal ${r0e}*1.1
-variable Kel    equal ${Eelastic}*PI*${d}/8 
+variable r0e   equal ${d} # Equilibrium bond length
+variable rloe  equal ${r0e}*0.9 #these two I will use to create the bonds: I will create bonds between all particles that are farther than rloe and
+variable rhie  equal ${r0e}*1.1 #closer than rhie apart
+variable Kel    equal ${Eelastic}*PI*${d}/8 #Derivation in PairPotentialDerivations.pdf
 
 #Elastic-Elastic Bending
-variable Bel equal ${Eelastic}*PI*(${d}^3)/64
+variable Bel equal ${Eelastic}*PI*(${d}^3)/64 #Derivation in PairPotentialDerivations.pdf
 #]
 
 ###Times
 #[
 #There are a couple of tricks that I use to set the amount of time that a simulation will take to run. You do not have to do it like this, but I have found that 
 #It is easier to change things quickly and intuitively this way. You feel free, though, to create your own method of operation
-variable compressionTime equal 2 #First I set the number of nondimensional time units I want the compression of the elastica to take. This would be seconds if the units were "si"
-
-variable speed equal 0.0005 #I can use this to keep the amount of time that the simulation logs constant but increase the number of timesteps that I simulate. The lower this number is, the more "fine-grained" the simulatioln will be 
-variable out equal 10000/${speed} #This is the number of timesteps in one nondimensional time unit
+variable compressionTime equal 2 #First I set the number of seconds I want the compression of the elastica to take
+variable speed equal 0.0005 #I can use this to keep the amount of time that the simulation logs constant but increase the number of timesteps that I simulate.
+# The lower this number is, the more "fine-grained" the simulatioln will be 
+variable out equal 10000/${speed} #This is the number of timesteps in one second
 variable thermoOut equal ${out}*0.1 #This is how often I output the thermo information
 variable dout equal ${out}*.1 #This is how often I create a dump file
-variable infoOut equal ${out}*.01
+variable infoOut equal ${out}*.01 #this is how often I will write to my other output file
 variable r1 equal ${out}*${compressionTime} #This is how many timesteps I will run the simulation for 
-variable time equal 0.0001*${speed} #This is the length of a timestep in nondimensional time units 
+variable time equal 0.0001*${speed} #This is the length of a timestep in seconds 
 #]
 
 ###Geometry
 #[
 variable xlo equal -.12
 variable xhi equal .12 
-variable ylo equal -${d}/2 #These two variables are the dimensions of the simulation box. I make it one grain diameter thick to keep the elastica in plane 
+variable ylo equal -${d}/2 # I make the simulation box one grain diameter thick to keep the elastica in plane 
 variable yhi equal ${d}/2 #^
 variable zlo equal -.12
 variable zhi equal .12
 
 region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} #Create the space where the simulation will take place 
 create_box	1 simulationStation bond/types 1 extra/bond/per/atom 2 angle/types 1 extra/angle/per/atom 3 #There will be one atom in the simulation box, one type of bond, 
-#each atom will participate in 2 bonds (left and right neighbor), there will be one type of angle, each atom will participate in 3 angles
+#each atom will participate in 2 bonds (left and right neighbor), there will be one type of angle, each atom will participate in at most 3 angles
 change_box	all boundary f f f #The boundaries of the simulation box will be fixed 
 #]
 
 ###Integration stuff
 #[
+#These are some settings for how LAMMPS does the integration -- for a given particle, LAMMPS will check whether it is in contact or in a bond or angle with 
+#any of its "neighbors" which are all of the particles that are d+neighborSize away from the particle. Update the neighbor list every timestep, integrate
+#using nve integration
 variable neighborSize equal 1.2*${d}
 neighbor	${neighborSize} bin 
 neigh_modify	delay 0 every 1 check yes
@@ -88,84 +122,106 @@ fix		integration all nve/sphere
 
 ### Setup the contacts
 #[
+# The grains which are not bonded or in an angle together will interact in a granular style
 pair_style granular 
 pair_coeff  * *  &
 	hertz/material ${Eyoung} ${restitution} ${poissons} tangential mindlin NULL ${xscaling} ${coeffric} rolling sds ${kr} ${gammar} ${rolfric} twisting marshall damping tsuji 
+# We will also make the walls of the simulation box rigid with a granular pair style
 fix box all wall/gran/region granular &
 	hertz/material ${Eyoung} ${restitution} ${poissons} tangential mindlin NULL ${xscaling} ${coeffric} &
 	rolling sds ${kr} ${gammar} ${rolfric} twisting marshall damping tsuji &
 	region simulationStation
 
-special_bonds   lj/coul 0 1.0 1.0 
-bond_style   harmonic 
-bond_coeff   1 ${Kel} ${r0e} 
 
-angle_style   cosine 
-angle_coeff   1 ${Bel} 
+special_bonds   lj/coul 0 1.0 1.0 #Turn off the granular interaction of any two particles that are bonded together
+bond_style   harmonic # see PairPotentialDerivations.pdf
+bond_coeff   1 ${Kel} ${r0e} # Set the bond coefficients
+
+angle_style   cosine #see PairPotentialDerivations.pdf
+angle_coeff   1 ${Bel} #Set the angle coefficients
 
 #]
 
 ### Thermo And Dump
 #[
-
+# Every ${thermoOut} timesteps output this information
 thermo_style custom step atoms time
 thermo_modify	lost warn
 thermo		${thermoOut}
-timestep	${time}
+timestep	${time} #set the timestep of the simulation
 
-compute stress all stress/atom NULL
-compute contacts all contact/atom
-variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)
-compute bendingE all pe/atom angle
-compute stretchingE all pe/atom bond
-compute totBendE all pe angle 
+#These are a bunch of things that I want to canculate and output in my dump file
+compute stress all stress/atom NULL #use this
+compute contacts all contact/atom #and this
+variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001) #to output the pressure of each particle
+compute bendingE all pe/atom angle #Bending energy of each atom
+compute stretchingE all pe/atom bond #stretching energy of each atom
+ #Total bending and stretching energy
+compute totBendE all pe angle
 compute totStretchE all pe bond
 variable totBEV equal c_totBendE
 variable totSEV equal c_totStretchE
 
-
+#Output all of these every ${dout} timesteps
 dump		lump all custom ${dout} out*.dump id type radius x y z fx fy fz v_pressure c_contacts c_bendingE c_stretchingE
-dump_modify	lump pad 11
+dump_modify	lump pad 11 #semantics, for file ordering
 
 #]
 
 #]
 
+#to create a loop in LAMMPS you first create a loop variable, then you place a label (iter). i starts at one -- 
+#later in the code we will move to the next value of i (i+1) and we will jump back to this label. Once i 
+#is finished, the file no longer jumps back to this label
 variable i loop ${numElastics}
 label iter
 
 ###############################  Make the elastic
 #[
 
+#I will place each particle in the beam one at a time. I will make the beam  4 particles longer than I need it to be, 
+#but I will use the extra particles to clamp the beam
 
-variable numelastic equal ${startNumberofGrains}+4+${grainsBetweenElastics}*($i-1)
-variable insert loop ${numelastic} 
-label insertloop
-variable xins equal 0
-variable yins equal 0
-variable zins equal -${d}*${numelastic}/2+${d}/2+${d}*(${insert}-1)
-create_atoms 1 single ${xins} ${yins} ${zins} 
-next insert
-jump SELF insertloop
+#NOTE: sometimes I will place the particles like this, other times I will import a text file which already has all of the 
+#particle positions defined. I will show you the LAMMPS loop method here, but check the 2d structures directory for some
+#examples of how to create and import your own particle position files
 
-group elastic type 1 
-set type 1 diameter ${d} 
-set type * density ${dens} 
-variable mass equal mass(elastic) #find the mass of the elastic
-variable visc equal 0.1*9.8*${mass} #Calculate the maximum value of the viscosity
-fix camp1 all viscous ${visc}
+variable numelastic equal ${startNumberofGrains}+4+${grainsBetweenElastics}*($i-1) #number of particles in the beam
+variable insert loop ${numelastic} #loop through the particles in the beam
+label insertloop #label for loop
+variable xins equal 0 #The x position of this particle
+variable yins equal 0 #the y postiion of this particle
+variable zins equal -${d}*${numelastic}/2+${d}/2+${d}*(${insert}-1) #the z position of this particle
+create_atoms 1 single ${xins} ${yins} ${zins} #this is the step where we create the particle
+next insert #move to the next particle
+jump SELF insertloop #jump back to the label "insertloop"
 
-fix		grav elastic gravity .000001 vector 1 0 0 #Perturb
+#now once all of our particles are in place we will 
+group elastic type 1 #grab them
+set type * diameter ${d} #set their diameters to be ${d}
+set type * density ${dens} #set their densities to be ${dens}
+#We will also be applying a viscous force to keep the simulation under control. We find the approximate value 
+#of the viscous term by taking a fraction of the gravitational force
+variable mass equal mass(elastic) #find the mass of the beam
+variable visc equal 0.1*9.8*${mass} #Calculate the value of the viscosity
+fix camp1 all viscous ${visc} #set the viscosity
 
-create_bonds   many elastic elastic 1 ${rloe} ${rhie} 
+fix		grav elastic gravity .000001 vector 1 0 0 #Perturb the beam to break symmetry
 
-variable numGrainsInElasticMinus2 equal (${numelastic}-2)
+create_bonds   many elastic elastic 1 ${rloe} ${rhie} #create all of the bonds between nearest neighbors in the beam
+
+#LAMMPS does not allow us to create many angles at the same time like we just did with the bonds, so instead we will 
+#go individually through all of the triplets of nearest neighbors and create an angle between each of them. Since we created the 
+#particles in order in the last loop, their particle ids are also in order, so we can iterate through them sequentially
+#for instance, particle 1 2 and 3 are the first second and third particles from the bottom, so we will create an angle between
+#those three, then move on to particles 2 3 and 4
+variable numGrainsInElasticMinus2 equal (${numelastic}-2) 
 variable bend loop ${numGrainsInElasticMinus2} 
 label bendloop
-variable atom1id equal ${bend} 
-variable atom2id equal ${atom1id}+1
-variable atom3id equal ${atom1id}+2
-create_bonds   single/angle 1 ${atom1id} ${atom2id} ${atom3id} 
+variable atom1id equal ${bend} #take the first particle
+variable atom2id equal ${atom1id}+1 #take the particle after it
+variable atom3id equal ${atom1id}+2 #take the particle after after it
+create_bonds   single/angle 1 ${atom1id} ${atom2id} ${atom3id} #create an angle between those three particles 
 next bend
 jump SELF bendloop
 
@@ -175,18 +231,24 @@ jump SELF bendloop
 ###############################  Squish the elastic
 #[
 
-#I will grab four from the d/2 and 2 from the d to make them clamped the same amt
+#Grab the bottom two particles and put them in a group and repeat with the top two particles
 group		endbottomgroup  id 1
 group		endbottomgroup  id 2
 variable nem1 equal ${numelastic}-1
 group		endtopgroup id ${numelastic}
 group		endtopgroup id ${nem1}
 
+#calculate the target velocity for the bottom two and top two particles
 variable bottomGroupVelocity equal  ${squish}/(2*${compressionTime})
 variable topGroupVelocity    equal -${squish}/(2*${compressionTime})
+#move each of those groups
 fix zbot endbottomgroup  move linear 0 0 ${bottomGroupVelocity}  
 fix ztop endtopgroup     move linear 0 0 ${topGroupVelocity}
 
+# I want an additional file that will make my analysis of the beam buckling strain easier, so I will output the 
+# time, the strain, the position of the center particle, and the total bending and stretching energy of each beam of length
+#${length} every ${infoOut} timesteps. I will include in this directory the matlab script that I use to find the buckling strains
+#from this data
 variable t equal time
 variable length equal ${d}*(${numelastic}-4)
 variable eps equal ${length}-(xcm(endtopgroup,z)-xcm(endbottomgroup,z)-2*${d})
@@ -196,9 +258,11 @@ fix Eout all print ${infoOut} "${t} ${eps} ${xofcenter} ${totBEV} ${totSEV}" fil
 run ${r1} 
 #]
 
+#To prepare for the next loop I must delete all of the atoms, and also stop outputting the file for the last beam. When this loops
+#it will create a new output file for the next beam 
 delete_atoms group all
 unfix Eout
 
-
+#jump back and make and compress another beam
 next i
 jump SELF iter
