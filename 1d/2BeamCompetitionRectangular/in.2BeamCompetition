@@ -1,4 +1,9 @@
 
+#This file will be quite similar to in.cylindricalValidation in ../ValidateCylindricalBeams. I will take two of the beams the likes
+#of which appear in in.cylindricalValidation, but which are of different thicknesses and I will compress them next to one another
+#to see which one will "win". I set the number of grains (and inversely the thickness) of the beams manually, and this file automatically 
+#sweeps through beam distances. I will detail the differences between this and in.cylindricalValidation, but please look through that 
+#file for more details
 
 ###############################  Startup
 #[
@@ -14,16 +19,16 @@ comm_modify	vel yes
 
 ###Settings
 #[  
-variable length equal 0.095
-variable numGMaxBig equal 23
-variable numGMaxSmall equal 33
-variable squish equal 0.004
-variable Eelastic equal 0.96*10^6 #This is the target young's modulus for the elastica    
-variable dens equal 800  
-variable startSpacing equal 0.0005*8
-variable endSpacing equal 0.0005*10
-variable numSpacingIter equal 20
-variable spacingmesh equal (${endSpacing}-${startSpacing})/${numSpacingIter}
+variable length equal 0.095 #The length of the free section of the two beams (not including the 4 extra grains that I use as the clamp)
+variable numGMaxBig equal 23 #number of grains in the thicker beam
+variable numGMaxSmall equal 33 #number of grains in the thinner beam
+variable squish equal 0.004 #The amount of compression in meters
+variable Eelastic equal 0.96*10^6 #The target young's modulus for the beams
+variable dens equal 800  #density of the beams 
+variable startSpacing equal 0.0005*8 #The smallest spacing
+variable endSpacing equal 0.0005*10 #The largest spacing
+variable numSpacingIter equal 5 #the number of spacings between the smallest and largest spacings that we will test
+variable spacingmesh equal (${endSpacing}-${startSpacing})/${numSpacingIter} #the distance between the spacings that we will test
 #]
 
 ###Constants
@@ -42,32 +47,29 @@ variable gammar equal 0
 
 ###Times
 #[
-#There are a couple of tricks that I use to set the amount of time that a simulation will take to run. You do not have to do it like this, but I have found that 
-#It is easier to change things quickly and intuitively this way. You feel free, though, to create your own method of operation
-variable compressionTime equal 10 #First I set the number of nondimensional time units I want the compression of the elastica to take. This would be seconds if the units were "si"
+variable compressionTime equal 10 #I compress the beams over the course of 10 seconds, ie quasistatically
 
-variable speed equal 0.001 #I can use this to keep the amount of time that the simulation logs constant but increase the number of timesteps that I simulate. The lower this number is, the more "fine-grained" the simulatioln will be 
-variable out equal 10000/${speed} #This is the number of timesteps in one nondimensional time unit
-variable thermoOut equal ${out}*0.1 #This is how often I output the thermo information
-#variable dout equal ${out}*0.01 #This is how often I create a dump file
+variable speed equal 0.001
+variable out equal 10000/${speed} 
+variable thermoOut equal ${out}*0.1
+variable dout equal ${out}*0.01 
 variable infoOut equal ${out}*.01
-variable r1 equal ${out}*${compressionTime} #This is how many timesteps I will run the simulation for 
-variable time equal 0.0001*${speed} #This is the length of a timestep in nondimensional time units 
+variable r1 equal ${out}*${compressionTime} 
+variable time equal 0.0001*${speed} 
 #]
 
 ###Geometry
 #[
 variable xlo equal -.1
 variable xhi equal .1
-variable ylo equal -0.015 #These two variables are the dimensions of the simulation box. I make it one grain diameter thick to keep the elastica in plane 
-variable yhi equal 0.015 #^
+variable ylo equal -0.015
+variable yhi equal 0.015 
 variable zlo equal -.1
 variable zhi equal .1
 
-region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} #Create the space where the simulation will take place 
-create_box	2 simulationStation bond/types 2 extra/bond/per/atom 2 angle/types 2 extra/angle/per/atom 3 #There will be one atom in the simulation box, one type of bond, 
-#each atom will participate in 2 bonds (left and right neighbor), there will be one type of angle, each atom will participate in 3 angles
-change_box	all boundary f f f #The boundaries of the simulation box will be fixed 
+region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} 
+create_box	2 simulationStation bond/types 2 extra/bond/per/atom 2 angle/types 2 extra/angle/per/atom 3 
+change_box	all boundary f f f 
 #]
 
 ###Integration stuff
@@ -95,30 +97,25 @@ angle_style   cosine
 
 ### Thermo
 #[
-
 thermo_style custom step atoms time
 thermo_modify	lost warn
 thermo		${thermoOut}
 timestep	${time}
-
 #]
 
 #]
-
-
-
 
 variable numginthick equal ${numGMaxBig}
 variable numginthin equal ${numGMaxSmall}
 variable d1 equal ${length}/${numginthin}
 variable d2 equal ${length}/${numginthick}
-### Make the bond constants
+### Since I have two different beams of different thicknesses, I have to set two kinds of pair potentials
 #[
 #Elastic-Elastic Stretching
 variable r0e1   equal ${d1} 
 variable rloe1  equal ${r0e1}*0.9 
 variable rhie1  equal ${r0e1}*1.1
-variable Kel1    equal ${Eelastic}*${d1}/2 
+variable Kel1    equal ${Eelastic}*${d1}/2 #As you can see I am making rectangular beams
 variable r0e2   equal ${d2} 
 variable rloe2  equal ${r0e2}*0.9 
 variable rhie2  equal ${r0e2}*1.1
@@ -132,25 +129,26 @@ angle_coeff   1 ${Bel1}
 angle_coeff   2 ${Bel2} 
 #]
 
-
+#I will loop over the spacings
 variable j loop ${numSpacingIter}
 label spacingIter
 #[
-
+#Find the distance between the center of the two beams based on the spacing between their surfaces -- this is what we will use to place the beams
 variable distance equal ${d1}/2+${d2}/2+${spacingmesh}*$j+${startSpacing}
-###############################  Make the elastic
+###############################  Make the beams
 #[
-variable numelastic1 equal ${numginthin}+4
+#make the first beam
+variable numelastic1 equal ${numginthin}+4 #Just like in in.cylindricalValidation we will make each beam plus four grains for the clamp
 variable insert1 loop ${numelastic1} 
 label insertloop1 
 variable xins equal -${distance}/2
 variable yins equal 0
-variable zins equal -${length}/2-3*${d1}/2+${d1}*(${insert1}-1) #This is an annoying line. Go to -length, but then we want 2 more grains below that, but actually 1.5 to get to the center
-create_atoms 1 single ${xins} ${yins} ${zins} 
+variable zins equal -${length}/2-3*${d1}/2+${d1}*(${insert1}-1) 
+create_atoms 1 single ${xins} ${yins} ${zins} #place each particle and the x y and z positions that we calculate above 
 next insert1 
 jump SELF insertloop1 
 
-
+#Make the second beam
 variable numelastic2 equal ${numginthick}+4
 variable insert2 loop ${numelastic2} 
 label insertloop2
@@ -167,23 +165,21 @@ group elastic2 type 2
 set type 1 diameter ${d1} 
 set type 2 diameter ${d2} 
 set type * density ${dens} 
-#This is the value for viscosity that I have come up with so far, want to talk to you to shore this up.
-#I have that ma = mg - visc*v so visc = 0.1(to make it smaller)*g*m/v, v=1. The old one was : fix damp1 all viscous 0.1 #Add a touch of viscosity so things don't go haywire 
-variable mass1 equal mass(elastic1) #find the mass of the elastic
-variable visc1 equal 0.05*9.8*${mass1} #Calculate the maximum value of the viscosity
+variable mass1 equal mass(elastic1) #find the mass of the first beam
+variable visc1 equal 0.05*9.8*${mass1} #Calculate the value of the viscosity
 fix camp1 elastic1 viscous ${visc1}
-variable mass2 equal mass(elastic2) #find the mass of the elastic
-variable visc2 equal 0.05*9.8*${mass2} #Calculate the maximum value of the viscosity
+variable mass2 equal mass(elastic2) #find the mass of the second beam
+variable visc2 equal 0.05*9.8*${mass2} #Calculate the value of the viscosity
 fix camp2 elastic2 viscous ${visc2}
 
 fix		grav1 elastic1 gravity .00000001 vector 1 0 0 #Perturb
 fix		grav2 elastic2 gravity .00000001 vector -1 0 0 #Perturb
 
-
+#Create the bonds 
 create_bonds   many elastic1 elastic1 1 ${rloe1} ${rhie1} 
 create_bonds   many elastic2 elastic2 2 ${rloe2} ${rhie2} 
 
-
+#Create the angles
 variable numGrainsInElasticMinus2_1 equal (${numelastic1}-2)
 variable bend1 loop ${numGrainsInElasticMinus2_1} 
 label bendloop1 
@@ -208,10 +204,9 @@ jump SELF bendloop2
 #]
 
 
-###############################  Squish the elastic
+###############################  Compress the Beams
 #[
 
-#I will grab four from the d/2 and 2 from the d to make them clamped the same amt
 group		endbottomgroup  id 1
 group		endbottomgroup  id 2
 variable nem1_1 equal ${numelastic1}-1
@@ -235,6 +230,7 @@ fix ztop endtopgroup     move linear 0 0 ${topGroupVelocity}
 
 dump pump all custom ${r1} d1${d1}_d2${d2}_spacing${distance}_*.dump id type radius x y z fx fy fz
 dump_modify pump pad 11
+#I did not do this step in in.cylindricalValidation, but it is best practice not to integrate any particles twice in a simulation (with nve and with fix move)
 group rest subtract all endbottomgroup endtopgroup
 fix		integration rest nve/sphere
 run ${r1} 

@@ -1,5 +1,9 @@
 
 
+
+#Write the description for this after you validate loops
+
+
 ###############################  Startup
 #[
 
@@ -12,22 +16,17 @@ processors	* * 1
 comm_modify	vel yes 
 #]
 
-variable seed file rngs1.txt 
-print ${seed}
 
 ###Settings
 #[  
-variable processor equal 1
+variable seed 1234
 variable delastic equal 0.001506075715629
 variable dgrains equal 0.01143
 variable Eelastic equal 0.5*10^9
 variable thnaught equal (PI-0.019883497807529)*180/PI
-variable startSeparation equal ${dgrains}*0.9
-variable endSeparation equal ${dgrains}*1.9
-variable numSeparations equal 12
-variable numSetupsAtEachSeparation equal 4
 variable grainsettletime equal 0.25
 variable stringsettletime equal 0.25
+variable separation equal 1.2*${d}
 variable gotime equal 2
 variable numbig equal 500
 variable numGrainsInEachRing equal 158                                                                                    
@@ -44,6 +43,8 @@ variable poissons equal 0.35
 variable kr equal (4.0*${Eyoung})/(2.0*(2.0-${poissons})*(1.0+${poissons}))
 variable xscaling equal 1
 variable gammar equal 1
+variable coeffric equal 0.3
+variable rolfric equal ${coeffric}
 
 
 #Elastic-Elastic Stretching
@@ -53,7 +54,8 @@ variable rhie  equal ${r0e}*1.1
 variable Kel    equal ${Eelastic}*PI*${delastic}/8 
 
 #Elastic-Elastic Bending
-variable Bel equal 0.5*${Eelastic}*PI*(${delastic}^3)/64 #0.5 bc we are using cosine/shift
+variable Bel equal 2*${Eelastic}*PI*(${delastic}^3)/64 #There is an extra 2 at the beginning of this line, which comes in because 
+#we are using cosine/shift which is defined slightly differently from cosine
 #]
 
 ###Times
@@ -65,7 +67,7 @@ variable thermoOut equal ${out}*0.01
 variable r1 equal ${out}*${grainsettletime}
 variable r2 equal ${out}*${stringsettletime}
 variable r3 equal ${out}*${gotime}
-variable dout equal ${r1}+${r2}+${r3}
+variable dout equal (${r1}+${r2}+${r3})*.01
 variable time equal 0.0001*${speed} 
 #]
 
@@ -111,12 +113,6 @@ timestep	${time}
 
 
 ######################################################## Do the thing
-### Loop through the coefficients of friction
-variable i loop 11
-label muloop
-variable coeffric equal 0.05*$i
-variable rolfric equal ${coeffric}
-#[
 
 ### Setup the contacts
 #[
@@ -137,17 +133,6 @@ angle_coeff   1 ${Bel} ${thnaught}
 
 #]
 
-### Loop through the separations
-variable sepmesh equal (${endSeparation}-${startSeparation})/(${numSeparations}-1)
-variable j loop ${numSeparations}
-label seploop
-variable separation equal ${startSeparation}+(${j}-1)*${sepmesh}
-#[
-
-### Loop through the iterations
-variable k loop ${numSetupsAtEachSeparation}
-label iter
-#[
 
 
 
@@ -217,7 +202,7 @@ variable maxspd equal 100*${dgrains}*${time}
 fix slowdown all nve/limit ${maxspd}
 
 #Make the dump files
-dump pump all custom ${dout} cf${coeffric}_space${separation}_endRun${k}_processor${processor}_*.dump id type radius x y z
+dump pump all custom ${dout} cf${coeffric}_space${separation}*.dump id type radius x y z
 dump_modify pump pad 11
 
 run ${r1}
@@ -234,22 +219,4 @@ unfix cylhard #Remove the container
 
 run ${r3}
 
-undump pump #remove the dump file
-unfix camp1 #remove viscosity
-unfix camp2
-delete_atoms group all #Delete all atoms
 
-#]
-next seed
-next k
-jump SELF iter
-
-#]
-next j
-jump SELF seploop
-
-unfix box
-
-#]
-next i
-jump SELF muloop

@@ -1,5 +1,9 @@
 
 
+#This file has very little commenting because it is almost exactly the sameas in.cylindricalValidation in ../ValidateCylindricalBeams.
+#The only difference between the files is that this file energetically simulates rectangular beams with a square cross section,
+#that is, the bending and stretching energies are different, as detailed in PairPotentialDerivations.pdf. 
+
 ###############################  Startup
 #[
 
@@ -19,7 +23,7 @@ variable numElastics equal 70
 variable startNumberofGrains equal 10
 variable grainsBetweenElastics equal 2
 variable squish equal 0.2*$d
-variable Eelastic equal 0.96*10^6 #This is the target young's modulus for the elastica    
+variable Eelastic equal 0.96*10^6 
 variable dens equal 800                                                                                                                
 #]
 
@@ -42,40 +46,37 @@ variable gammar equal 0
 variable r0e   equal ${d} 
 variable rloe  equal ${r0e}*0.9 
 variable rhie  equal ${r0e}*1.1
-variable Kel    equal ${Eelastic}*${d}/2
+variable Kel    equal ${Eelastic}*${d}/2 #This is the stretching energy for rectangular beams
 
 #Elastic-Elastic Bending
-variable Bel equal ${Eelastic}*(${d}^3)/12
+variable Bel equal ${Eelastic}*(${d}^3)/12 #This is the bending energy for rectangular beams
 #]
 
 ###Times
 #[
-#There are a couple of tricks that I use to set the amount of time that a simulation will take to run. You do not have to do it like this, but I have found that 
-#It is easier to change things quickly and intuitively this way. You feel free, though, to create your own method of operation
-variable compressionTime equal 4 #First I set the number of nondimensional time units I want the compression of the elastica to take. This would be seconds if the units were "si"
+variable compressionTime equal 4
 
-variable speed equal 0.001 #I can use this to keep the amount of time that the simulation logs constant but increase the number of timesteps that I simulate. The lower this number is, the more "fine-grained" the simulatioln will be 
-variable out equal 10000/${speed} #This is the number of timesteps in one nondimensional time unit
-variable thermoOut equal ${out}*0.1 #This is how often I output the thermo information
-variable dout equal ${out}*.1 #This is how often I create a dump file
+variable speed equal 0.001
+variable out equal 10000/${speed}
+variable thermoOut equal ${out}*0.1 
+variable dout equal ${out}*.1 
 variable infoOut equal ${out}*.01
-variable r1 equal ${out}*${compressionTime} #This is how many timesteps I will run the simulation for 
-variable time equal 0.0001*${speed} #This is the length of a timestep in nondimensional time units 
+variable r1 equal ${out}*${compressionTime} 
+variable time equal 0.0001*${speed} 
 #]
 
 ###Geometry
 #[
 variable xlo equal -.12
 variable xhi equal .12 
-variable ylo equal -${d}/2 #These two variables are the dimensions of the simulation box. I make it one grain diameter thick to keep the elastica in plane 
-variable yhi equal ${d}/2 #^
+variable ylo equal -${d}/2 
+variable yhi equal ${d}/2 
 variable zlo equal -.12
 variable zhi equal .12
 
-region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} #Create the space where the simulation will take place 
-create_box	1 simulationStation bond/types 1 extra/bond/per/atom 2 angle/types 1 extra/angle/per/atom 3 #There will be one atom in the simulation box, one type of bond, 
-#each atom will participate in 2 bonds (left and right neighbor), there will be one type of angle, each atom will participate in 3 angles
-change_box	all boundary f f f #The boundaries of the simulation box will be fixed 
+region 		simulationStation block ${xlo} ${xhi} ${ylo} ${yhi} ${zlo} ${zhi} 
+create_box	1 simulationStation bond/types 1 extra/bond/per/atom 2 angle/types 1 extra/angle/per/atom 3 
+change_box	all boundary f f f 
 #]
 
 ###Integration stuff
@@ -175,7 +176,6 @@ jump SELF bendloop
 ###############################  Squish the elastic
 #[
 
-#I will grab four from the d/2 and 2 from the d to make them clamped the same amt
 group		endbottomgroup  id 1
 group		endbottomgroup  id 2
 variable nem1 equal ${numelastic}-1

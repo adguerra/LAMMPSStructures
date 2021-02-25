@@ -246,15 +246,14 @@ fix zbot endbottomgroup  move linear 0 0 ${bottomGroupVelocity}
 fix ztop endtopgroup     move linear 0 0 ${topGroupVelocity}
 
 # I want an additional file that will make my analysis of the beam buckling strain easier, so I will output the 
-# time, the strain, the position of the center particle, and the total bending and stretching energy of each beam of length
-#${length} every ${infoOut} timesteps. I will include in this directory the matlab script that I use to find the buckling strains
-#from this data
+# time, the change in length, the position of the center particle, and the total bending and stretching energy of each beam of length
+#${length} every ${infoOut} timesteps. I will include in this directory the matlab script that I use to find the buckling strain
 variable t equal time
 variable length equal ${d}*(${numelastic}-4)
-variable eps equal ${length}-(xcm(endtopgroup,z)-xcm(endbottomgroup,z)-2*${d})
+variable dl equal ${length}-(xcm(endtopgroup,z)-xcm(endbottomgroup,z)-2*${d})
 variable idofcenter equal (${numelastic}-4)/2
 variable xofcenter equal x[${idofcenter}]
-fix Eout all print ${infoOut} "${t} ${eps} ${xofcenter} ${totBEV} ${totSEV}" file ${length}_time_strain_xofcenter_BE_SE.out
+fix Eout all print ${infoOut} "${t} ${dl} ${xofcenter} ${totBEV} ${totSEV}" file ${length}_time_dl_xofcenter_BE_SE.out
 run ${r1} 
 #]
 
