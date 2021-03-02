@@ -10,3 +10,17 @@ In each of these directories I will have some verification (probably in COMSOL, 
 The most heavily commented, and also the simplest, LAMMPS input file is LAMMPSStructures/1d/ValidateCylindricalBeams/in.cylindricalValidation, and the other 1d files are commented where they differ from that file. If you are new to this repository or to LAMMPS I would start there. The most heavily commented 2d file is LAMMPSStructures/2d/REPLACEWHENYOUVALIDATE2D.
 
  To run any of these files you will need to download LAMMPS. Hopefully there is enough information here that you could take the code and modify it to simulate your own situation :) 
+
+
+
+List and description of files: 
+
+1d
+ -  ValidateCylindricalBeams: Code to perform a test of the buckling strain of cylindrical beams as well as comparrison to COMSOL
+ -  ValidateRectangularBeams: Same as above but with rectangular beams
+ -  ValidateLoops: Code to test the shape of compressed rings and comparrison to theory
+ -  2BeamCompetitionRectangular: Code which compresses two beams next to one another
+ -  ColumnWithLoops: Code for a column of grains confined with elastic loops
+
+2d
+ - Still working... 
