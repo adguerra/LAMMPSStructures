@@ -19,6 +19,6 @@ A = [x; y];
 format long
 actuald = sqrt((x(2)-x(1))^2 + (y(2)-y(1))^2)
 actualThnaught = atan2(y(3) - y(1), x(3) - x(1)) - atan2(y(2) - y(1), x(2) - x(1))
-fprintf(fileID, 'create_atoms 2 single %13.9f %13.9f ${zlevel}\n', A);
+fprintf(fileID, 'create_atoms 1 single %13.9f %13.9f ${zlevel}\n', A);
 fclose(fileID);
 
