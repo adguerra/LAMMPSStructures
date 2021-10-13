@@ -34,7 +34,19 @@ List and description of files:
 
 ## Some Examples
 
+### "Cells" growing on a manifold
+
+![cells](https://user-images.githubusercontent.com/43476955/137187691-48a16b9c-6b9f-458d-8da6-ab99c0110dac.gif)
+
+### Wrinkles in a Developable Cone (previously undocumented)
+
+![dcone](https://user-images.githubusercontent.com/43476955/137188365-9ddbedf4-f91a-4d99-8040-812077e63f5d.gif)
+
+### Simulation of a knot 
+
 ![knotsgif](https://user-images.githubusercontent.com/43476955/137184828-72b2bb9d-7260-4df2-89c1-94fa9e60d076.gif)
 
-![knotsgiflowq](https://user-images.githubusercontent.com/43476955/137185262-5c0a2508-82e9-436c-83f2-92e63389b417.gif)
+### Frustrated growth on a cylinder
+
+![cylinder](https://user-images.githubusercontent.com/43476955/137187100-2c82dc44-7658-4ccd-803e-c660a4c724d9.gif)
 
