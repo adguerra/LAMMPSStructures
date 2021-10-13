@@ -2,9 +2,6 @@
 
 This repository is intended to showcase some 
 
-https://user-images.githubusercontent.com/43476955/137153475-48e0dc59-a64e-490d-a1e9-bc2e374901e6.mov
-
-
 ## Map
 
 In this repository I have a couple of different examples of how we make and use elastic structures in LAMMPS. I will split this up into two categories of structures:
