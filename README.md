@@ -6,7 +6,7 @@ On the other hand, LAMMPS, a Discrete Element simulation software, is excellent 
 
 ## Brief Tour
 
-In this main folder we have a first draft of a PDF of the derivation of all of the interatomic forces -- PairPotentialDerivations.pdf. Until further notice we recommend instead referring to this publication for a more thorough, well-edited, and specific derivation of the pair potentials for 1-d elastic structures.
+In this main folder we have a first draft of a PDF of the derivation of all of the interatomic forces -- PairPotentialDerivations.pdf. Until further notice we recommend instead referring to [this publication](https://pubs.rsc.org/en/content/articlelanding/2021/sm/d1sm00787d) for a more thorough, well-edited, and specific derivation of the pair potentials for 1-d elastic structures.
 
 We split our examples into two categories:
 
