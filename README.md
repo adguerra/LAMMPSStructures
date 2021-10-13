@@ -6,9 +6,9 @@ On the other hand, LAMMPS, a Discrete Element simulation software, is excellent 
 
 ## Brief Tour
 
-In this main folder we have a first draft of a PDF of the derivation of all of the interatomic forces -- PairPotentialDerivations.pdf. For now 
+In this main folder we have a first draft of a PDF of the derivation of all of the interatomic forces -- PairPotentialDerivations.pdf. Until further notice we recommend instead referring to this publication for a more thorough, well-edited, and specific derivation of the pair potentials for 1-d elastic structures.
 
-In this repository I have a couple of different examples of how we make and use elastic structures in LAMMPS. I will split this up into two categories of structures:
+We split our examples into two categories:
 
  - 1d structures, which are "grains" or "particles" arranged in a line to form an elastic beam
  - 2d structures, which are particles arranged in a triangular lattice to form an elastic sheet
