@@ -1,5 +1,9 @@
 # LAMMPSStructures
 
+This repository is intended to showcase some 
+
+## Map
+
 In this repository I have a couple of different examples of how we make and use elastic structures in LAMMPS. I will split this up into two categories of structures:
 
  - 1d structures, which are "grains" or "particles" arranged in a line to form an elastic beam
