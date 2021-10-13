@@ -1,8 +1,5 @@
 # LAMMPSStructures
 
-![knotsgif](https://user-images.githubusercontent.com/43476955/137184828-72b2bb9d-7260-4df2-89c1-94fa9e60d076.gif)
-
-
 The goal of this repository is to provide some examples and source code for the use of LAMMPS as a simulation tool for elastic materials. These materials are traditionally simulated using a finite element software, which has the benefit that it can model complex geometries, but often these softwares have a very hard time modeling contact and other complex boundary conditions. For instance, when roots dig into soil or when cells jam on the surface of the Extra-Cellular Matrix or when birds build a nest, there is a coupling either between many elastic bodies in contact, or between granular and elastic materials. These would all be nearly impossible to simulate using a finite element software.
 
 On the other hand, LAMMPS, a Discrete Element simulation software, is excellent at handling contact at the expense of geometrical complexity -- almost everything is treated as a sphere. Here we show how we have used the tools in LAMMPS to "glue" spheres into elastic bodies to get the best of both worlds. We give some examples for how we have used this tool so far, and provide some example code to look through. Eventually we would like to turn this repository into a tool, either a general LAMMPS input file which is easy to use, or some sort of GUI or MATLAB script where one could input geometry and load and then run a simulation of their elastic structure
@@ -33,3 +30,11 @@ List and description of files:
 
 2d
  - Still working... 
+
+
+## Some Examples
+
+![knotsgif](https://user-images.githubusercontent.com/43476955/137184828-72b2bb9d-7260-4df2-89c1-94fa9e60d076.gif)
+
+![knotsgiflowq](https://user-images.githubusercontent.com/43476955/137185262-5c0a2508-82e9-436c-83f2-92e63389b417.gif)
+
