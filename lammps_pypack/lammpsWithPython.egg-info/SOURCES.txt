@@ -1,0 +1,7 @@
+setup.py
+lammpsWithPython/__init__.py
+lammpsWithPython/lammps_object.py
+lammpsWithPython.egg-info/PKG-INFO
+lammpsWithPython.egg-info/SOURCES.txt
+lammpsWithPython.egg-info/dependency_links.txt
+lammpsWithPython.egg-info/top_level.txt
