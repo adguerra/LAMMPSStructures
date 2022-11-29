@@ -10,7 +10,7 @@ if __name__ == "__main__":
     simname = str(sys.argv[1])
     
     # Start a simulation with the name simname
-    sim = Simulation(simname, 3, 0.18, 0.18, 0.08)
+    sim = Simulation(simname, 3, 0.15, 0.15, 0.07)
 
     # The 'Sheet thickness' will be what we use to set the energies (and therefore stretching and bending modulus)
     # but we'll use mesh particles of spacing 'mesh_particle_spacing' so the mesh isn't too small, and diameter
