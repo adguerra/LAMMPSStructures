@@ -27,8 +27,8 @@ class Simulation:
         - length, width, height: the length, width, and height of the box that we are going to run the simulation in
         - numtypes: The number of "types" of particles that we will 
         - (x,y,z)_bound: whether the x, y, or z boundaries are fixed (f) periodic (p) or shrink-wrapped (s)
-        - thermo: list of custom variables which can be output during the simulation
         """
+        # TODO add 2d
 
         print(
             "\n### Making a simulation file in the folder '"
@@ -37,6 +37,9 @@ class Simulation:
         )
 
         self._dimension = dimension
+        self._length = length
+        self._width = width
+        self._height = height
         self._x_bound = x_bound
         self._y_bound = y_bound
         self._z_bound = z_bound
@@ -89,18 +92,21 @@ class Simulation:
             f.write(
                 f"region simulationStation block -{length/2} {length/2} -{width/2} {width/2} -{height/2} {height/2}\n"
             )
-            # Then we make it the simulation station. Here the 100s are:
-            #   The number of types of atoms
-            #   The number of types of bonds
-            #   The number of possible bonds per particle
-            #   The number of types of angles
-            #   The number of possible angles per particle
-            # Here we put more of each than we need (since we don't know how many we need at the time of the writing of this line),
-            # and since we have lines like "bond_coeff * 0 0", we set all of the extra ones to zero. If you need to put in more than
-            #  100 of any of these, feel free to change this line!
+            # Then we make it the simulation station. Here the numbers are:
+            #   The number of types of atoms (100)
+            #   The number of types of bonds (100000)
+            #   The number of possible bonds per particle (100)
+            #   The number of types of angles (10000)
+            #   The number of possible angles per particle (100)
+            # In this line we have to put something, and if we put too few, lammps will get mad at us. For example if we say we
+            # are going to have 30 types of particles, but we insert 31 types if particles, LAMMPS will be like "thats more than we thought!"
+            # and your sim will die. However, since we don't know how many we need at the time of the writing of this line,
+            # We just put more that we think we'll need. And since we have lines like "bond_coeff * 0 0", we set all of the 
+            # extra ones to zero. If you need to put in more than I allow here, feel free to change this line!
             f.write(
                 "create_box 100 simulationStation bond/types 100000 extra/bond/per/atom 100 angle/types 10000 extra/angle/per/atom 100\n"
             )
+            # Make the boundry fixed, periodic, or shrink wrapped
             f.write(
                 "change_box	all boundary "
                 + x_bound
@@ -111,20 +117,26 @@ class Simulation:
                 + "\n"
             )
             f.write("\n")
-            #
+            # We will use a granular / lj pair style, giving us the ability to have granular interactions and also cohesive/repulsive energies
             f.write("pair_style hybrid/overlay granular lj/cut 0\n")
+            # Set all of them to zero to start (LAMMPS doesnt like when anything is not set)
             f.write(
                 "pair_coeff  * * granular hertz/material 0 0 0 tangential linear_nohistory 0 0\n"
             )
             f.write("pair_coeff  * * lj/cut 0 0 0\n")
             f.write("\n")
+            # Not totally sure what this does
             f.write("special_bonds lj/coul 0 1.0 1.0\n")
+            # These are the potentials we will use
             f.write("bond_style harmonic\n")
             f.write("angle_style cosine\n")
             f.write("\n")
             f.write("bond_coeff * 0 0\n")
             f.write("angle_coeff * 0\n")
+            # Turn on integration
             f.write("fix integration all nve/sphere\n")
+            # This allows you to put in more particles and bonds. You might need to change this if you want an even bigger simulation
+            f.write("neigh_modify page 500000 one 50000\n")
             f.write("\n\n### Here we will begin to include particles ###\n\n")
         pass
 
@@ -227,7 +239,7 @@ class Simulation:
         for i in range(1, n_particles):
             coords = np.vstack((coords, pos1 + (pos2 - pos1) * i / (n_particles - 1)))
         # Make a list of the particles that we want to connect via bonds
-        n_so_far = max(self._particles.index)
+        n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
         tuplets = [[n_so_far + 1, n_so_far + 2]]
         for i in range(2, n_particles):
             tuplets.append([n_so_far + i, n_so_far + i + 1])
@@ -322,7 +334,7 @@ class Simulation:
             )
 
         # Make a list of the particles that we want to connect via bonds
-        n_so_far = max(self._particles.index)
+        n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
         tuplets = [[n_so_far + n_particles, n_so_far + 1]]
         for i in range(1, n_particles - 1):
             tuplets.append([n_so_far + i, n_so_far + i + 1])
@@ -350,12 +362,13 @@ class Simulation:
         self.construct_many_angles(triplets, angle_stiffness)
 
         # Change the timestep to be able to handle these grains
-        m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
-        k = bond_stiffness * 2  # Somehow include angle_stiffness
-        if self._timestep:
-            self._timestep = min(self._timestep, ((1 / 2) * m / k) ** 0.5)  # TODO
-        else:
-            self._timestep = ((1 / 2) * m / k) ** 0.5
+        if youngs_modulus > 0:
+            m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
+            k = bond_stiffness * 2  # Somehow include angle_stiffness
+            if self._timestep:
+                self._timestep = min(self._timestep, ((1 / 2) * m / k) ** 0.5)  # TODO
+            else:
+                self._timestep = ((1 / 2) * m / k) ** 0.5
 
         return self._type_iter, self._bond_type_iter, self._angle_type_iter
 
@@ -364,11 +377,11 @@ class Simulation:
         center: np.array,
         radius: float,
         # normal: np.array,
-        particle_spacing: float,
-        geometric_thickness: float,
+        mesh_particle_spacing: float,
+        energetic_thickness: float,
         youngs_modulus: float,
         density: float,
-        energetic_thickness_multiplier: float = 1,
+        mesh_particle_diameter: float = None,
         strecthing_multiplier: float = 1,
         bending_multiplier: float = 1,
     ):
@@ -378,13 +391,16 @@ class Simulation:
         Inputs:
         - center: A 1x3 np.array with the x, y, z coordinates of the center of the sheet
         - radius: The radius of the sheet
-        - particle_spacing: The resting distance between particles in the sheet
-        - geometric_thickness: The diameter of the particles which make up the beam
-        - youngs_modulus: The Young's modulus of the beam
-        - density: The density of the particles which make up the beam. NOTE that this is different from
-            the density of the beam itself
-        - energetic_thickness_multiplier: This is to change the thickness term in the stretching and bending
-            energies, which changes the stretching energy linearly and the bending energy cubically
+        - mesh_particle_spacing: The resting distance between mesh particles in the sheet
+        - energetic_thickness: This term is what is used to calculate the bending and stretching modulus of the sheet (along with the youngs modulus). 
+            NOTE: changing this does not change any physical sizes in the simulation, only the energy in the bonds and angles between particles.
+            Explicitly, for you elasticity mathematicians out there, this is h.
+        - youngs_modulus: The Young's modulus of the sheet material
+        - density: The density of the particles which make up the sheet. NOTE that this is different from
+            the density of the sheet itself
+        - mesh_particle_diameter: This term changes the diameter of the mesh particles. If this is not set (left set to None),
+            the mesh particle diameter will simply be set to the mesh particle spacing, such that all of the particles in the sheet
+            will look like they're right next to each other
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
@@ -392,20 +408,22 @@ class Simulation:
         """
         self._num_sheets += 1
 
+        geometric_thickness = mesh_particle_diameter if mesh_particle_diameter else mesh_particle_spacing
+
         coords = [[0, 0, 0]]
         for i in range(
-            round(-radius * 2 / particle_spacing), round(radius * 2 / particle_spacing)
+            round(-radius * 2 / mesh_particle_spacing), round(radius * 2 / mesh_particle_spacing)
         ):
             for j in range(
-                round(-radius * 2 / particle_spacing),
-                round(radius * 2 / particle_spacing),
+                round(-radius * 2 / mesh_particle_spacing),
+                round(radius * 2 / mesh_particle_spacing),
             ):
                 if i % 2 == 0:
-                    x = i * np.cos(np.pi / 6) * particle_spacing
-                    y = j * particle_spacing
+                    x = i * np.cos(np.pi / 6) * mesh_particle_spacing
+                    y = j * mesh_particle_spacing
                 else:
-                    x = i * np.cos(np.pi / 6) * particle_spacing
-                    y = (j - np.sin(np.pi / 6)) * particle_spacing
+                    x = i * np.cos(np.pi / 6) * mesh_particle_spacing
+                    y = (j - np.sin(np.pi / 6)) * mesh_particle_spacing
                 if (x ** 2 + y ** 2) ** 0.5 < radius:
                     coords.append(list(center + np.array([x, y, 0])))
         del coords[0]
@@ -413,12 +431,12 @@ class Simulation:
 
         print(f"\n### Creating a circular sheet with {coords.shape[0]} particles ###")
 
-        n_so_far = max(self._particles.index)
+        n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
         tuplets = [[0, 0]]
         for i in range(coords.shape[0]):
             a = 0
             for j in range(i + 1, coords.shape[0]):
-                if dist(coords,i,j)< particle_spacing * 1.01:
+                if _dist(coords,i,j)< mesh_particle_spacing * 1.01:
                     tuplets.append([n_so_far + i + 1, n_so_far + j + 1])
                     a += 1
                     if a == 3:break
@@ -427,14 +445,13 @@ class Simulation:
 
         triplets = [[0, 0, 0]]
         for i in range(coords.shape[0]):
-            weve_touched_this_j = False
             a = 0
             for j in range(i + 1, coords.shape[0]):
-                if dist(coords,i,j) < particle_spacing * 1.01:
+                if _dist(coords,i,j) < mesh_particle_spacing * 1.01:
                     for k in range(j + 1, coords.shape[0]):
                         if (
-                            dist(coords,j,k) < particle_spacing * 1.01
-                            and dist(coords,i,k) > particle_spacing * 1.9
+                            _dist(coords,j,k) < mesh_particle_spacing * 1.01
+                            and _dist(coords,i,k) > mesh_particle_spacing * 1.9
                         ):
                             triplets.append([n_so_far + i + 1, n_so_far + j + 1, n_so_far + k + 1])
                             break
@@ -448,32 +465,31 @@ class Simulation:
             coords, geometric_thickness, density, f"sheet_{self._num_sheets}.txt"
         )
         # Thickness
-        h = geometric_thickness * energetic_thickness_multiplier
+        h = energetic_thickness
         # rest length of the bonds is the spacing between the particles
-        rest_length = particle_spacing
+        rest_length = mesh_particle_spacing
         # dfactor is the diameter of a particle divided by the distance between particles in the beam
-        dfactor = geometric_thickness / rest_length
         bond_stiffness = (
-            strecthing_multiplier * youngs_modulus * h * dfactor * (3 ** 0.5) / 4
-        )  # TODO test how dfactor works here, I think we don't need it
+            strecthing_multiplier * youngs_modulus * h * (3 ** 0.5) / 4
+        )
         angle_stiffness = (
             (4 / (3 * (3 ** 2)))
             * bending_multiplier
             * youngs_modulus
             * (h ** 3)
-            * dfactor
             / (12 * (1 - (1 / 3) ** 2))
-        )  # TODO test how dfactor works here, I think we don't need it
+        )
 
         self.construct_many_bonds(tuplets, bond_stiffness, rest_length)
         self.construct_many_angles(triplets, angle_stiffness)
 
-        m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
-        k = bond_stiffness * 2  # Somehow include angle_stiffness
-        if self._timestep:
-            self._timestep = min(self._timestep, ((1 / 6) * m / k) ** 0.5)  # TODO
-        else:
-            self._timestep = ((1 / 6) * m / k) ** 0.5
+        if youngs_modulus > 0:
+            m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
+            k = bond_stiffness * 2  # Somehow include angle_stiffness
+            if self._timestep:
+                self._timestep = min(self._timestep, ((1 / 6) * m / k) ** 0.5)  # TODO
+            else:
+                self._timestep = ((1 / 6) * m / k) ** 0.5
 
         return self._type_iter, self._bond_type_iter, self._angle_type_iter
 
@@ -540,7 +556,7 @@ class Simulation:
         Make two types of particles interact in a granular way. This can either be a simple
         contact potential, which repels particles which are overlapping, or it can be a super
         complicated potential which adds all sorts of granular mechanics. If you want the chill
-        potentiall, aoof you need to input is:
+        potentiall, all you need to input is:
         - type1, type2: The types of particles you want to add an interaction potential to. This is output from methods like "add_grains," "add_beam," etc. 
         - youngs_modulus: The youngs modulus of the particles -- this will determine how much they can overlap given some confining force
         
@@ -710,7 +726,6 @@ class Simulation:
         youngs_modulus: float = None,
         hardcore_dict: dict = None,
     ):
-        # restitution = None, poissons = None, xscaling = None, coeffric = None
         """
         Make a lammps "region", and optionally make the walls of that region have a granular potential with a type of particles.
         This can either be a simple contact potential, which repels particles which are overlapping, or it can be a super
@@ -800,7 +815,7 @@ class Simulation:
                     f.write(
                         f"fix fix_walls_{self._wall_iter} "
                         + group
-                        + f" wall/gran/region granular hertz/material {youngs_modulus} 0 0.5 tangential linear_nohistory 0 0 region region_{self._wall_iter}\n"
+                        + f" wall/gran/region granular hertz/material {youngs_modulus} 0.25 0.25 tangential linear_nohistory 0 0 region region_{self._wall_iter}\n"
                     )
         return self._wall_iter
 
@@ -808,9 +823,9 @@ class Simulation:
         self,
         particles: List[int] = None,
         type: int = None,
-        xvel: float = 0,
-        yvel: float = 0,
-        zvel: float = 0,
+        xvel: float = None,
+        yvel: float = None,
+        zvel: float = None,
     ):
         """
         Move a set of particles at some velocity
@@ -821,6 +836,9 @@ class Simulation:
 
         And:
         xvel, yvel, zvel: The velocity in the x, y, and z directions to move that particle
+
+        Note: If you pass in 'None' to either xvel, yvel, or zvel, or leave them blank, those 
+        velocities will not be mandated, and the particles will be free to move in those directions
         """
         if particles and type:
             raise Exception("You can move EITHER a particle OR a type of particle")
@@ -832,18 +850,17 @@ class Simulation:
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             if type:
                 f.write(f"\ngroup group_move_{self._move_iter} type {type}\n")
-                f.write(
-                    f"fix fix_move_{self._move_iter} group_move_{self._move_iter} move linear {xvel} {yvel} {zvel}\n"
-                )
             if particles:
                 f.write(
                     f"\ngroup group_move_{self._move_iter} id "
                     + " ".join(str(particle) for particle in particles)
                     + "\n"
                 )
-                f.write(
-                    f"fix fix_move_{self._move_iter} group_move_{self._move_iter} move linear {xvel} {yvel} {zvel}\n"
-                )
+            f.write(
+                f"fix fix_move_{self._move_iter} group_move_{self._move_iter} move linear "
+                + " ".join(str(dir_vel) if not dir_vel is None else 'NULL' for dir_vel in [xvel, yvel, zvel])
+                + "\n"
+            )
 
         return self._move_iter
 
@@ -878,19 +895,19 @@ class Simulation:
         - magnitude: magnitude of the perturbative force
         - xdir, ydir, zdir: direction of the perturbative force
         """
-        if particles and type:
+        if not particles is None and not type is None:
             raise Exception("You can move EITHER a particle OR a type of particle")
-        if not particles and not type:
+        if particles is None and type is None:
             raise Exception("You must move either a particle or a type of particle")
 
         self._perturb_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            if type:
+            if not type is None:
                 f.write(f"\ngroup group_perturb_{self._perturb_iter} type {type}\n")
                 f.write(
                     f"fix fix_perturb_{self._perturb_iter} group_perturb_{self._perturb_iter} gravity {magnitude} vector {xdir} {ydir} {zdir}\n"
                 )
-            if particles:
+            if not particles is None:
                 f.write(
                     f"\ngroup group_perturb_{self._move_iter} id "
                     + " ".join(str(particle) for particle in particles)
@@ -912,7 +929,7 @@ class Simulation:
         self._visc_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write("\n")
-            if type:
+            if not type is None:
                 f.write(f"group group_viscosity_{self._visc_iter} type {type}\n")
                 f.write(
                     f"fix fix_viscosity_{self._visc_iter} group_viscosity_{self._visc_iter} viscous {value}\n"
@@ -924,7 +941,6 @@ class Simulation:
 
     def remove_something(self, thing: str, number_of_that_thing: int = None):
         """
-        TODO: Add particles, move
         This removes something from the simulation. Inputs:
         - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles", "gravity", "perturbation", "move", and "walls"
         - number_of_that_thing: The number of the thing you want to remove
@@ -967,6 +983,7 @@ class Simulation:
     def custom(self, statement: str):
         """
         Add a custom statement to the simulation
+        - statement: The line that you want to add
         """
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write(statement + "\n")
@@ -984,7 +1001,7 @@ class Simulation:
         - thermo_list: A list of things you want in the thermo output
         """
         self._thermo_step = round(thermo_every_this_many_seconds / self._timestep)
-        if thermo_list:
+        if not thermo_list is None:
             self._thermo_list = thermo_list
         else:
             self._thermo_list = ["step", "atoms", "time"]
@@ -1000,43 +1017,63 @@ class Simulation:
         self, dump_file_every_this_many_seconds: float, dump_list: List[str] = None
     ):
         """
-        TODO: Description, mention what we can have in dump_list and also say that theres more in LAMMPS documentation
+        Also mention that if we have already made the dump files, this just changes how often we print them
+
+        This command makes it such that we output dump files, and it also decides what will be in those dump files. 
+        If we have already called this function once in the script, then this does not re-design the dump files,
+        rather, it simply allows you to change how often those dump files will be output.
+        Inputs:
+        - dump_file_every_this_many_seconds: This sets how many seconds the simulation waits between printing
+            dump files.
+        - dump_list: This determines what will be in the dump file.
+        
+        The way that I have this set up, we always include the id, type, and radius of the particles, as well
+        as their x y z positions. If you pass in an empty list here then that is all you'll get in your dump files.
+        If you leave this set to None, we will also include the x, y, and z force components, as well as the bending
+        and stretching energy. You can also additionally pass in 'contacts', which will give you the number of contacts
+        per particle, 'pressure', which will output the pressure on each particle, or anything else that LAMMPS will
+        accept in a custom dump file (https://docs.lammps.org/dump.html, the section on 'custom' attributes)
         """
-        self._dump_file_every_this_many_seconds = dump_file_every_this_many_seconds
-        if dump_list:
-            self._dump_list = dump_list
+
+        if self._dump_file_every_this_many_seconds:
+            self._dump_file_every_this_many_seconds = dump_file_every_this_many_seconds
+        
         else:
-            self._dump_list = ["fx", "fy", "fz", "bending_energy", "stretching_energy"]
+            self._dump_file_every_this_many_seconds = dump_file_every_this_many_seconds
+            if not dump_list is None:
+                self._dump_list = dump_list
+            else:
+                self._dump_list = ["fx", "fy", "fz", "bending_energy", "stretching_energy"]
 
-        with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            f.write("\n")
-            if "contacts" in self._dump_list:
-                f.write("compute contacts all contact/atom\n")
-                self._dump_list.remove("contacts")
-                self._dump_list.append("v_contacts")
-            if "pressure" in self._dump_list:
-                f.write("compute stress all stress/atom NULL\n")
-                f.write("compute contacts all contact/atom\n")
+            with open(os.path.join(self._path, "in.main_file"), "a") as f:
+                f.write("\n")
+                if "contacts" in self._dump_list:
+                    f.write("compute contacts all contact/atom\n")
+                    self._dump_list.remove("contacts")
+                    self._dump_list.append("v_contacts")
+                if "pressure" in self._dump_list:
+                    f.write("compute stress all stress/atom NULL\n")
+                    f.write("compute contacts all contact/atom\n")
+                    f.write(
+                        "variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)\n"
+                    )
+                    self._dump_list.remove("pressure")
+                    self._dump_list.append("v_pressure")
+                if "bending_energy" in self._dump_list:
+                    f.write("compute bendingE all pe/atom angle\n")
+                    self._dump_list.remove("bending_energy")
+                    self._dump_list.append("c_bendingE")
+                if "stretching_energy" in self._dump_list:
+                    f.write("compute stretchingE all pe/atom bond\n")
+                    self._dump_list.remove("stretching_energy")
+                    self._dump_list.append("c_stretchingE")
+
                 f.write(
-                    "variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)\n"
+                    f"dump pump all custom 1 out*.dump id type radius x y z "
+                    + " ".join(str(item) for item in self._dump_list)
+                    + "\n"
                 )
-                self._dump_list.remove("pressure")
-                self._dump_list.append("v_pressure")
-            if "bending_energy" in self._dump_list:
-                f.write("compute bendingE all pe/atom angle\n")
-                self._dump_list.remove("bending_energy")
-                self._dump_list.append("c_bendingE")
-            if "stretching_energy" in self._dump_list:
-                f.write("compute stretchingE all pe/atom bond\n")
-                self._dump_list.remove("stretching_energy")
-                self._dump_list.append("c_stretchingE")
-
-            f.write(
-                f"dump pump all custom 1 out*.dump id type radius x y z "
-                + " ".join(str(item) for item in dump_list)
-                + "\n"
-            )
-            f.write("dump_modify pump pad 11\n")
+                f.write("dump_modify pump pad 11\n")
         pass
 
     def run_simulation(self, time: float, timestep: float = None):
@@ -1058,7 +1095,7 @@ class Simulation:
         if not self._timestep:
             raise Exception("It seems like we don't have any particles to simulate!")
 
-        if not timestep:
+        if timestep is None:
             timestep = self._timestep
 
         number_of_timesteps = round(time / timestep)
@@ -1073,5 +1110,5 @@ class Simulation:
         pass
 
 
-def dist(coords, i, j):
+def _dist(coords, i, j):
     return ((coords[i, 0] - coords[j, 0])**2 + (coords[i, 1] - coords[j, 1])**2 + (coords[i, 2] - coords[j, 2])**2)**0.5
