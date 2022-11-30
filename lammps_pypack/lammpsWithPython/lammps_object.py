@@ -1116,13 +1116,13 @@ class Simulation:
                 print("Cant reset timestep after sim has run and `fix move` has been performed (move() has been called)")
                 print("Ignoring the timestep and running simulation with the last timestep that was set")
                 print("######\n")
-                number_of_timesteps_run = round(time / self._last_run_timestep)
-                number_of_timesteps_dump = round(self._dump_file_every_this_many_seconds / self._last_run_timestep)
+                number_of_timesteps_run = round(time / self._manual_timestep)
+                number_of_timesteps_dump = round(self._dump_file_every_this_many_seconds / self._manual_timestep)
             else:
                 f.write(f"\ntimestep {timestep}\n")
                 number_of_timesteps_run = round(time / timestep)
                 number_of_timesteps_dump = round(self._dump_file_every_this_many_seconds / timestep)
-                self._last_run_timestep = timestep
+                self._manual_timestep = timestep
             if self._dump_file_every_this_many_seconds:
                 f.write(
                     f"dump_modify pump every {number_of_timesteps_dump}\n"
@@ -1131,6 +1131,27 @@ class Simulation:
             self._have_run = True
 
         pass
+
+    def manually_edit_timestep(self,timestep: float):
+        """
+        First thing you need to know about this method, you usually set the timestep when you run run_simulation(),
+        so more often than not, this method is not needed. However, there are some rare cases where you might
+        want to set this manually. For example, lets say I'm about to apply a fix move (call the move() method),
+        but I also want to change the timestep before this happens. I won't be able to change the timestep after
+        the fix move because of what I mention in the desription of run_simulation(). Therefore, you can use
+        this function to slip in a timestep change right before the fix move.
+        """
+
+        if self._have_run and self._move_iter>0:
+            raise Exception("Cant change the timestep if you have started the simulation and applied a fix move")
+
+        with open(os.path.join(self._path, "in.main_file"), "a") as f:
+            f.write(f"\ntimestep {timestep}\n")
+            self._manual_timestep = timestep
+    
+        pass
+
+
 
 
 def _dist(coords, i, j):

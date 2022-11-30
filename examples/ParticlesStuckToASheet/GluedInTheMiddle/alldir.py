@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # I'm gonna reset the timestep manually here. The reason for this is that I really want to reset the timestep,
     # But also, if I wait until after I do the sim.move(), lammps is going to yell at me (detailed in the run_simulation) description
-    sim.custom(f"timestep {timestep2}")
+    sim.manually_edit_timestep(timestep2)
 
     # Find all of the particles which are around the edge of the sheet and make them not move
     clamped_particles = sim._particles.index[((sim._particles['x_position'] ** 2 + sim._particles['y_position'] ** 2) ** 0.5 > sheet_radius - 0.4 * grain_diameter) & (sim._particles['type']==2)].tolist()
