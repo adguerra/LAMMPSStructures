@@ -1,0 +1,141 @@
+atom_style hybrid angle sphere
+units si
+processors	* * 1
+comm_modify vel yes
+
+region simulationStation block -0.025 0.025 -0.005 0.005 -0.05 0.05
+create_box 100 simulationStation bond/types 100000 extra/bond/per/atom 100 angle/types 10000 extra/angle/per/atom 100
+change_box	all boundary f f f
+
+pair_style hybrid/overlay granular lj/cut 0
+pair_coeff  * * granular hertz/material 0 0 0 tangential linear_nohistory 0 0
+pair_coeff  * * lj/cut 0 0 0
+
+special_bonds lj/coul 0 1.0 1.0
+bond_style harmonic
+angle_style cosine
+
+bond_coeff * 0 0
+angle_coeff * 0
+fix integration all nve/sphere
+neigh_modify page 500000 one 50000
+
+
+### Here we will begin to include particles ###
+
+
+fix fix_walls_1 all wall/gran/region granular hertz/material 10000 0.25 0.25 tangential linear_nohistory 0 0 region simulationStation
+pair_coeff * * granular hertz/material 10000 0 0.5 tangential linear_nohistory 0 0
+
+include beam_1.txt 
+set type 1 diameter 0.002
+set type 1 density 0.5
+bond_coeff 1 3011.368421052632 0.0006375838926174496
+include bonds_1.txt
+angle_coeff 1 0.0020075789473684214
+include angles_1.txt
+pair_coeff 1 1 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_2.txt 
+set type 2 diameter 0.002
+set type 2 density 0.5
+bond_coeff 2 3011.368421052632 0.0006375838926174496
+include bonds_2.txt
+angle_coeff 2 0.0020075789473684214
+include angles_2.txt
+pair_coeff 2 2 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_3.txt 
+set type 3 diameter 0.002
+set type 3 density 0.5
+bond_coeff 3 3011.368421052632 0.0006375838926174496
+include bonds_3.txt
+angle_coeff 3 0.0020075789473684214
+include angles_3.txt
+pair_coeff 3 3 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_4.txt 
+set type 4 diameter 0.002
+set type 4 density 0.5
+bond_coeff 4 3011.368421052632 0.0006375838926174496
+include bonds_4.txt
+angle_coeff 4 0.0020075789473684214
+include angles_4.txt
+pair_coeff 4 4 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_5.txt 
+set type 5 diameter 0.002
+set type 5 density 0.5
+bond_coeff 5 3011.368421052632 0.0006375838926174496
+include bonds_5.txt
+angle_coeff 5 0.0020075789473684214
+include angles_5.txt
+pair_coeff 5 5 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_6.txt 
+set type 6 diameter 0.002
+set type 6 density 0.5
+bond_coeff 6 3011.368421052632 0.0006375838926174496
+include bonds_6.txt
+angle_coeff 6 0.0020075789473684214
+include angles_6.txt
+pair_coeff 6 6 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_7.txt 
+set type 7 diameter 0.002
+set type 7 density 0.5
+bond_coeff 7 3011.368421052632 0.0006375838926174496
+include bonds_7.txt
+angle_coeff 7 0.0020075789473684214
+include angles_7.txt
+pair_coeff 7 7 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_8.txt 
+set type 8 diameter 0.002
+set type 8 density 0.5
+bond_coeff 8 3011.368421052632 0.0006375838926174496
+include bonds_8.txt
+angle_coeff 8 0.0020075789473684214
+include angles_8.txt
+pair_coeff 8 8 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_9.txt 
+set type 9 diameter 0.002
+set type 9 density 0.5
+bond_coeff 9 3011.368421052632 0.0006375838926174496
+include bonds_9.txt
+angle_coeff 9 0.0020075789473684214
+include angles_9.txt
+pair_coeff 9 9 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+include beam_10.txt 
+set type 10 diameter 0.002
+set type 10 density 0.5
+bond_coeff 10 3011.368421052632 0.0006375838926174496
+include bonds_10.txt
+angle_coeff 10 0.0020075789473684214
+include angles_10.txt
+pair_coeff 10 10 granular hertz/material 0 0 0.5 tangential linear_nohistory 0 0
+
+group group_move_1 id 1 2 151 152 301 302 451 452 601 602 751 752 901 902 1051 1052 1201 1202 1351 1352
+fix fix_move_1 group_move_1 move linear 0 0 0.019000000000000003
+
+group group_move_2 id 149 150 299 300 449 450 599 600 749 750 899 900 1049 1050 1199 1200 1349 1350 1499 1500
+fix fix_move_2 group_move_2 move linear 0 0 -0.019000000000000003
+
+group group_perturb_1 type 1 4 6 8 9 10
+fix fix_perturb_1 group_perturb_1 gravity 1e-05 vector 1 0 0
+
+group group_perturb_2 type 2 3 5 7
+fix fix_perturb_2 group_perturb_2 gravity 1e-05 vector -1 0 0
+
+fix fix_viscosity_1 all viscous 2e-07
+
+compute bendingE all pe/atom angle
+compute stretchingE all pe/atom bond
+dump pump all custom 1 out*.dump id type radius x y z fx fy fz c_bendingE c_stretchingE
+dump_modify pump pad 11
+
+timestep 1e-07
+dump_modify pump every 100000
+run 10000000

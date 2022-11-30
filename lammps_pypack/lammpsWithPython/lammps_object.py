@@ -1,11 +1,12 @@
 import os
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import numpy as np
 import pandas as pd
 
 
 class Simulation:
+
     def __init__(
         self,
         simulation_name: str,
@@ -143,7 +144,7 @@ class Simulation:
 
     def add_grains(
         self, coords: np.array, diameter: float, density: float, filename: str = None
-    ):
+    ) -> int:
         """
         Add grains to the simulation
         Inputs:
@@ -211,7 +212,7 @@ class Simulation:
         energetic_thickness_multiplier: float = 1,
         strecthing_multiplier: float = 1,
         bending_multiplier: float = 1,
-    ):
+    ) -> Tuple[int, int, int]:
         """
         Create a beam out of particles, replete with bonds and angles to give the beam mechanical properties
         Inputs:
@@ -290,7 +291,7 @@ class Simulation:
         energetic_thickness_multiplier: float = 1,
         strecthing_multiplier: float = 1,
         bending_multiplier: float = 1,
-    ):
+    ) -> Tuple[int, int, int]:
         """
         Create a loop out of particles, replete with bonds and angles to give the loop mechanical properties
         Inputs:
@@ -385,7 +386,7 @@ class Simulation:
         mesh_particle_diameter: float = None,
         strecthing_multiplier: float = 1,
         bending_multiplier: float = 1,
-    ):
+    ) -> Tuple[int, int, int]:
         """
         Create a circular sheet out of particles, replete with bonds and angles to give the sheet mechanical properties
         NOTE: For now, all sheets have a normal of [0,0,1]. I might change this later (TODO)
@@ -496,7 +497,7 @@ class Simulation:
 
     def construct_many_bonds(
         self, tuplets: np.array, stiffness: float, rest_length: float
-    ):
+    ) -> int:
         """
         Add harmonic bonds between particles.
         Inputs:
@@ -523,7 +524,7 @@ class Simulation:
 
         return self._bond_type_iter
 
-    def construct_many_angles(self, triplets: np.array, stiffness: float):
+    def construct_many_angles(self, triplets: np.array, stiffness: float) -> int:
         """
         Add cosine angles between particles.
         Inputs:
@@ -550,7 +551,7 @@ class Simulation:
         return self._angle_type_iter
 
     def turn_on_granular_potential(
-        self, type1: int, type2: int, youngs_modulus: float, hardcore_dict: dict = None
+        self, type1: int = None, type2: int = None, youngs_modulus: float = None, hardcore_dict: dict = None
     ):
         # restitution = None, poissons = None, xscaling = None, coeffric = None
         """
@@ -560,6 +561,9 @@ class Simulation:
         potentiall, all you need to input is:
         - type1, type2: The types of particles you want to add an interaction potential to. This is output from methods like "add_grains," "add_beam," etc. 
         - youngs_modulus: The youngs modulus of the particles -- this will determine how much they can overlap given some confining force
+
+        If you don't pass in type2, it will turn on the granular potential between type1 and all other particles. If you
+        pass in neither type1 nor type2 it will turn on the granular potential between all particles.
         
         If you want to add additional physics, such that these particles actually
         behave like some sort of granular material, then you should:
@@ -590,7 +594,7 @@ class Simulation:
             )
 
         print(
-            f"\n### Initiating a granular potential between type {type1} and type {type2} Particles ###"
+            f"\n### Initiating a granular potential between type {'all' if type1 is None else type1} and type {'all' if type2 is None else type2} Particles ###"
         )
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
@@ -604,7 +608,7 @@ class Simulation:
                         * (1.0 + hardcore_dict["poissons"])
                     )
                 )
-                f.write(f"pair_coeff {type1} {type2} granular &\n")
+                f.write(f"pair_coeff {'*' if type1 is None else type1} {'*' if type2 is None else type2} granular &\n")
                 f.write(
                     f"hertz/material {youngs_modulus} {hardcore_dict['restitution']} {hardcore_dict['poissons']} tangential mindlin NULL {hardcore_dict['xscaling']} {hardcore_dict['coeffric']} &\n"
                 )
@@ -613,7 +617,7 @@ class Simulation:
                 )
             else:
                 f.write(
-                    f"pair_coeff {type1} {type2} granular hertz/material {youngs_modulus} 0 0.5 tangential linear_nohistory 0 0\n"
+                    f"pair_coeff {'*' if type1 is None else type1} {'*' if type2 is None else type2} granular hertz/material {youngs_modulus} 0 0.5 tangential linear_nohistory 0 0\n"
                 )
         pass
 
@@ -721,12 +725,12 @@ class Simulation:
 
     def add_walls(
         self,
-        region_details: str,
+        region_details: str = None,
         particles: List[int] = None,
         type: int = None,
         youngs_modulus: float = None,
         hardcore_dict: dict = None,
-    ):
+    ) -> int:
         """
         Make a lammps "region", and optionally make the walls of that region have a granular potential with a type of particles.
         This can either be a simple contact potential, which repels particles which are overlapping, or it can be a super
@@ -749,6 +753,9 @@ class Simulation:
             - rolfric: The coefficient of rolling friction
         I'd check out the lammps documentation for the "pair_style granular command" if you wanna be hardcore. Note that the downside
         to being hardcore is that it makes the simulation take much longer
+
+        One more thing -- if you pass in nothing for the region details, this will make the walls of the simulation station hard to the
+        particles or type that you input, with youngs modulus and hardcore dict acting as usual. Note that this cannot currently be undone (TODO)
         """
         if hardcore_dict and not all(
             key in hardcore_dict
@@ -788,7 +795,11 @@ class Simulation:
             else:
                 group = "all"
 
-            f.write(f"region region_{self._wall_iter} " + region_details + "\n")
+            if not region_details is None:
+                f.write(f"region region_{self._wall_iter} " + region_details + "\n")
+                region = f"region_{self._wall_iter}"
+            else:
+                region = "simulationStation"
 
             if youngs_modulus:
                 if hardcore_dict:
@@ -810,13 +821,13 @@ class Simulation:
                         f"hertz/material {youngs_modulus} {hardcore_dict['restitution']} {hardcore_dict['poissons']} tangential mindlin NULL {hardcore_dict['xscaling']} {hardcore_dict['coeffric']} &\n"
                     )
                     f.write(
-                        f"rolling sds {kr} {hardcore_dict['gammar']} {hardcore_dict['rolfric']} twisting marshall damping tsuji region region_{self._wall_iter}\n"
+                        f"rolling sds {kr} {hardcore_dict['gammar']} {hardcore_dict['rolfric']} twisting marshall damping tsuji region " + region + "\n"
                     )
                 else:
                     f.write(
                         f"fix fix_walls_{self._wall_iter} "
                         + group
-                        + f" wall/gran/region granular hertz/material {youngs_modulus} 0.25 0.25 tangential linear_nohistory 0 0 region region_{self._wall_iter}\n"
+                        + f" wall/gran/region granular hertz/material {youngs_modulus} 0.25 0.25 tangential linear_nohistory 0 0 region " + region + "\n"
                     )
         return self._wall_iter
 
@@ -827,7 +838,7 @@ class Simulation:
         xvel: float = None,
         yvel: float = None,
         zvel: float = None,
-    ):
+    ) -> int:
         """
         Move a set of particles at some velocity
         Pass in EITHER:
@@ -879,32 +890,37 @@ class Simulation:
     def perturb(
         self,
         particles: List[int] = None,
-        type: int = None,
+        types: List[int] = None,
         magnitude=10 ** -5,
         xdir=0,
         ydir=0,
         zdir=0,
-    ):
+    ) -> int:
         """
         Add a force to EITHER a type of particle OR a single particle in the simulation
         Pass in EITHER:
         - particles: A list of particles to perturb
         OR
-        - type: A type of particle to perturb (output from methods like "add_grains")
+        - type: A list of types of particle to perturb (output from methods like "add_grains")
 
         And:
         - magnitude: magnitude of the perturbative force
         - xdir, ydir, zdir: direction of the perturbative force
+
+        Note, the list of particles or types can be 1 particle or type long
         """
-        if not particles is None and not type is None:
+        if not particles is None and not types is None:
             raise Exception("You can move EITHER a particle OR a type of particle")
-        if particles is None and type is None:
+        if particles is None and types is None:
             raise Exception("You must move either a particle or a type of particle")
 
         self._perturb_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            if not type is None:
-                f.write(f"\ngroup group_perturb_{self._perturb_iter} type {type}\n")
+            if not types is None:
+                f.write(
+                        f"\ngroup group_perturb_{self._perturb_iter} type "
+                        + " ".join(str(type) for type in types)
+                        + "\n")
                 f.write(
                     f"fix fix_perturb_{self._perturb_iter} group_perturb_{self._perturb_iter} gravity {magnitude} vector {xdir} {ydir} {zdir}\n"
                 )
@@ -920,7 +936,7 @@ class Simulation:
 
         return self._perturb_iter
 
-    def add_viscosity(self, value, type: int = None):
+    def add_viscosity(self, value, type: int = None) -> int:
         """
         Add viscosity to all atoms or a type of atoms
         value - The strength of the viscosity
