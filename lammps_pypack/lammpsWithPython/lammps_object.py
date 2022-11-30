@@ -69,6 +69,7 @@ class Simulation:
         self._wall_iter = 0
         self._walls = []
         self._timestep = False
+        self._have_run = False
         self._dump_file_every_this_many_seconds = False
 
         # Make the directory that the lammps simulation will be placed in
@@ -1082,6 +1083,7 @@ class Simulation:
         - time: Amount of time to run the simulation for
         - timestep: The intended timestep of the simulation.
 
+        The auto-generated timestep is currently in-production (TODO), when it is done, read the following:
         A note on this, a timestep is already estimated automatically via this script, and if 
         you don't pass anything into the timestep value, the simulation will use this automatically 
         calculated timestep. However, there will probably be plenty of situations where you will 
@@ -1091,6 +1093,16 @@ class Simulation:
         place (resulting in errors where lammps tells you that it can no longer find the atoms in a bond or angle).
         If either of these things are happening to you, you might want to manually change the timestep. In that
         case, the auto-generated timestep can be a good jumping-off point!
+
+        Another note, LAMMPS will not let you re-set the timestep if you have already run some of the simulation, 
+        and then have applied a fix move. That is, if you have already simulated something -- called the 
+        run_simulation() method -- and then you call the move() method, LAMMPS freaks out, because it bases its
+        movement calculation on the timestep. If you change the timestep, that calculation is now out of whack.
+
+        Based on this, if you have both:
+        - Already run some of the simulation, AND
+        - Applied a fix move
+        Then this method will not allow you to reset the timestep
         """
         if not self._timestep:
             raise Exception("It seems like we don't have any particles to simulate!")
@@ -1098,14 +1110,25 @@ class Simulation:
         if timestep is None:
             timestep = self._timestep
 
-        number_of_timesteps = round(time / timestep)
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            f.write(f"\ntimestep {timestep}\n")
+            if self._have_run and self._move_iter>0:
+                print("\n######")
+                print("Cant reset timestep after sim has run and `fix move` has been performed (move() has been called)")
+                print("Ignoring the timestep and running simulation with the last timestep that was set")
+                print("######\n")
+                number_of_timesteps_run = round(time / self._last_run_timestep)
+                number_of_timesteps_dump = round(self._dump_file_every_this_many_seconds / self._last_run_timestep)
+            else:
+                f.write(f"\ntimestep {timestep}\n")
+                number_of_timesteps_run = round(time / timestep)
+                number_of_timesteps_dump = round(self._dump_file_every_this_many_seconds / timestep)
+                self._last_run_timestep = timestep
             if self._dump_file_every_this_many_seconds:
                 f.write(
-                    f"dump_modify pump every {round(self._dump_file_every_this_many_seconds / timestep)}\n"
+                    f"dump_modify pump every {number_of_timesteps_dump}\n"
                 )
-            f.write(f"run {number_of_timesteps}\n")
+            f.write(f"run {number_of_timesteps_run}\n")
+            self._have_run = True
 
         pass
 

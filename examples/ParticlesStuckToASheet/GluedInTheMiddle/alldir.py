@@ -49,16 +49,17 @@ if __name__ == "__main__":
     sheet_type, sheet_bonds, sheet_angles = sim.add_circular_sheet(np.array([0,0,0]), sheet_radius,0.004, 0.002, 10**4, 0.5)
     sim.add_viscosity(0.00001, sheet_type)
 
-    # Find all of the particles which are around the edge of the sheet
+    # I'm gonna reset the timestep manually here. The reason for this is that I really want to reset the timestep,
+    # But also, if I wait until after I do the sim.move(), lammps is going to yell at me (detailed in the run_simulation) description
+    sim.custom(f"timestep {timestep2}")
+
+    # Find all of the particles which are around the edge of the sheet and make them not move
     clamped_particles = sim._particles.index[((sim._particles['x_position'] ** 2 + sim._particles['y_position'] ** 2) ** 0.5 > sheet_radius - 0.4 * grain_diameter) & (sim._particles['type']==2)].tolist()
-    # Make those particles not move
     sim.move(particles = clamped_particles, xvel = 0, yvel = 0, zvel = 0)
 
     sim.connect_particles_to_elastic(grains_type, sheet_type, 1)
-    #sim.move(type=grains_type)
-    # sim.run_simulation(1,sim._timestep*0.1)
 
     sim.perturb(particles = [1,2], zdir = -1)
-    #sim.design_dump_files(0.001, ["fx", "fy", "fz", "pressure", "bending_energy", "stretching_energy"])
-    sim.run_simulation(0.5,timestep2)
-    #print(sim._particles.to_string())
+    # Here I don't have to worry about the timestep because I have run the sim once and called move(), so the timestep is ignored
+    # Sorry, I know this is confusing, check out the description of run_simulation() to learn more
+    sim.run_simulation(0.5)
