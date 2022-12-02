@@ -329,8 +329,8 @@ class Simulation:
 
         # Now we start laying the coords
         coords = center + radius * x1
-        theta = np.linspace(0, 2 * np.pi, n_particles + 1)
-        for i in range(1, n_particles):
+        thetas = np.linspace(2 * np.pi / n_particles, 2 * np.pi * (1 - 1 / n_particles), n_particles - 1)
+        for theta in thetas:
             coords = np.vstack(
                 (coords, center + radius * (x1 * np.cos(theta) + x2 * np.sin(theta)))
             )
@@ -338,15 +338,16 @@ class Simulation:
         # Make a list of the particles that we want to connect via bonds
         n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
         tuplets = [[n_so_far + n_particles, n_so_far + 1]]
-        for i in range(1, n_particles - 1):
+        for i in range(1, n_particles):
             tuplets.append([n_so_far + i, n_so_far + i + 1])
         tuplets = np.array(tuplets)
 
         # Make a list of the particles that we want to connect via angles
         triplets = [[n_so_far + n_particles - 1, n_so_far + n_particles, n_so_far + 1]]
         triplets.append([n_so_far + n_particles, n_so_far + 1, n_so_far + 2])
-        for i in range(1, n_particles - 2):
+        for i in range(1, n_particles - 1):
             triplets.append([n_so_far + i, n_so_far + i + 1, n_so_far + i + 2])
+        triplets = np.array(triplets)
 
         self.add_grains(
             coords, geometric_thickness, density, f"beam_{self._num_beams}.txt"
@@ -623,19 +624,24 @@ class Simulation:
 
     def connect_particles_to_elastic(
         self,
-        particles: Union[List[int], int],
         elastic_type: int,
         stiffness: float,
+        particles: List[int] = None,
+        type: int = None,
         n_bonds_per_grain: int = 3,
         cutoff: float = None,
-    ):
+    ) -> int:
         """
         TODO: Add cutoff
 
         Create bonds between a set of particles and an elastic material. This will set the rest length of the bonds equal to the
         distance, at the time of the command, between each particle and the surface.
         Inputs:
-        - particles: Either an int which is the particle type, or a list of particles
+        EITHER
+        - particles: a list of particles
+        OR 
+        - type: a type of particles
+        and:
         - elastic_type: The type of the elastic
         - stiffness: The stiffness of the bonds
         - n_bonds_per_particle: How many connections you want between each particle and the elastic. This is to restrict degrees of freedom. This can be 1 2 or 3.
@@ -646,14 +652,17 @@ class Simulation:
 
         if n_bonds_per_grain > 3:
             raise Exception(f"Can't do more than 3 bonds per grain, you tried to do {n_bonds_per_grain}")
+        
+        if not particles is None and not type is None:
+            raise Exception("Can either pass in a list of particles, or a type of particles, not both")
 
         ## If we get a type of particles, turn particles into a list of the particles of that type
-        if isinstance(particles, int):
+        if not type is None:
             print(
-                f"\n### Connecting particles of type {particles} to the surface of type {elastic_type} ###"
+                f"\n### Connecting particles of type {type} to the surface of type {elastic_type} ###"
             )
             particles = self._particles.index[
-                self._particles["type"] == particles
+                self._particles["type"] == type
             ].tolist()
         else:
             print(
@@ -721,13 +730,13 @@ class Simulation:
                     f.write("\ngroup goneplus delete")
                     f.write("\nregion roneplus delete")
             f.write(f"\ngroup elastic_connect delete")
-        pass
+        return self._connections_iter
 
     def add_walls(
         self,
         region_details: str = None,
-        particles: List[int] = None,
-        type: int = None,
+        particles: Union[List[int],int] = None,
+        type: Union[List[int],int] = None,
         youngs_modulus: float = None,
         hardcore_dict: dict = None,
     ) -> int:
@@ -742,7 +751,8 @@ class Simulation:
         
         If you pass in a youngs_modulus, the walls of the region that you are defining will become stiff to 
         some or all of the grains. Further options are:
-        - If you pass in neither a list of particle ids (particles) nor a type of particle, ALL particles in the simulation will interact with the walls
+        - If you pass in neither a particle or list of particle ids (particles) nor a type or list of types of particles,
+            ALL particles in the simulation will interact with the walls
         - If you pass in either particles, or type, the particles or type of particles that you pass in will interact with the walls
         - If you want to add additional physics, such that these particles actually behave like some sort of granular material, then you should input a "hardcore_dict" which contains:
             - restitution: The restitution coefficient
@@ -772,28 +782,31 @@ class Simulation:
                 "If the hardcore flag is on, you also need to input 'restitution', 'poissons', 'xscaling', 'coeffric', 'gammar', 'rolfric' in the hardcore_dict"
             )
 
-        if particles and type:
+        if not particles is None and not type is None:
             raise Exception(
                 "You can make EITHER a particle OR a type of particle OR all of the particles in the simulation (input neither particles nor type) interact with a wall"
             )
+        
+        if not type is None:
+            if isinstance(type,int):
+                group = f"type {type}"
+            else: 
+                group = f"type " + " ".join([str(typ) for typ in type])
+        elif not particles is None:
+            if isinstance(particles,int):
+                group = f"id {particles}"
+            else: 
+                group = f"id " + " ".join([str(part) for part in particles])
+        else: group = "all"
 
         self._wall_iter += 1
         self._walls.append([bool(particles or type), bool(youngs_modulus)])
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write("\n")
-            if particles:
-                f.write(
-                    f"group group_wall_{self._wall_iter} id "
-                    + " ".join(str(particle) for particle in particles)
-                    + "\n"
-                )
+            if group is not "all":
+                f.write(f"group group_wall_{self._wall_iter} " + group + "\n")
                 group = f"group_wall_{self._wall_iter}"
-            elif type:
-                f.write(f"group group_wall_{self._wall_iter} type {type}\n")
-                group = f"group_wall_{self._wall_iter}"
-            else:
-                group = "all"
 
             if not region_details is None:
                 f.write(f"region region_{self._wall_iter} " + region_details + "\n")
@@ -833,8 +846,8 @@ class Simulation:
 
     def move(
         self,
-        particles: List[int] = None,
-        type: int = None,
+        particles: Union[List[int], int] = None,
+        type: Union[List[int],int] = None,
         xvel: float = None,
         yvel: float = None,
         zvel: float = None,
@@ -842,9 +855,9 @@ class Simulation:
         """
         Move a set of particles at some velocity
         Pass in EITHER:
-        - particles: A list of particles to move
+        - particles: A partice or list of particles to move
         OR
-        - type: A type of particle to move (output from methods like "add_grains")
+        - type: A type or list of types of particle to move (output from methods like "add_grains")
 
         And:
         xvel, yvel, zvel: The velocity in the x, y, and z directions to move that particle
@@ -852,22 +865,26 @@ class Simulation:
         Note: If you pass in 'None' to either xvel, yvel, or zvel, or leave them blank, those 
         velocities will not be mandated, and the particles will be free to move in those directions
         """
-        if particles and type:
+        if not particles is None and not type is None:
             raise Exception("You can move EITHER a particle OR a type of particle")
-        if not particles and not type:
+        if particles is None and type is None:
             raise Exception("You must move either a particle or a type of particle")
+        
+        if not type is None:
+            if isinstance(type,int):
+                group = f"type {type}"
+            else: 
+                group = f"type " + " ".join([str(typ) for typ in type])
+        else:
+            if isinstance(particles,int):
+                group = f"id {particles}"
+            else: 
+                group = f"id " + " ".join([str(part) for part in particles])
 
         self._move_iter += 1
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            if type:
-                f.write(f"\ngroup group_move_{self._move_iter} type {type}\n")
-            if particles:
-                f.write(
-                    f"\ngroup group_move_{self._move_iter} id "
-                    + " ".join(str(particle) for particle in particles)
-                    + "\n"
-                )
+            f.write(f"\ngroup group_move_{self._move_iter} " + group + "\n")
             f.write(
                 f"fix fix_move_{self._move_iter} group_move_{self._move_iter} move linear "
                 + " ".join(str(dir_vel) if not dir_vel is None else 'NULL' for dir_vel in [xvel, yvel, zvel])
@@ -889,70 +906,88 @@ class Simulation:
 
     def perturb(
         self,
-        particles: List[int] = None,
-        types: List[int] = None,
+        particles: Union[List[int], int] = None,
+        type: Union[List[int],int] = None,
         magnitude=10 ** -5,
         xdir=0,
         ydir=0,
         zdir=0,
     ) -> int:
         """
-        Add a force to EITHER a type of particle OR a single particle in the simulation
+        Add a force to EITHER a type or list of types of particles OR a particle or list of particles in the simulation
         Pass in EITHER:
-        - particles: A list of particles to perturb
+        - particles: A particle or list of particles to perturb
         OR
-        - type: A list of types of particle to perturb (output from methods like "add_grains")
+        - type: A type or list of types of particle to perturb (output from methods like "add_grains")
 
         And:
         - magnitude: magnitude of the perturbative force
         - xdir, ydir, zdir: direction of the perturbative force
-
-        Note, the list of particles or types can be 1 particle or type long
         """
-        if not particles is None and not types is None:
-            raise Exception("You can move EITHER a particle OR a type of particle")
-        if particles is None and types is None:
-            raise Exception("You must move either a particle or a type of particle")
+        if not particles is None and not type is None:
+            raise Exception("You can perturb EITHER a particle OR a type of particle")
+        if particles is None and type is None:
+            raise Exception("You must perturb either a particle or a type of particle")
+        
+        if not type is None:
+            if isinstance(type,int):
+                group = f"type {type}"
+            else: 
+                group = f"type " + " ".join([str(typ) for typ in type])
+        else:
+            if isinstance(particles,int):
+                group = f"id {particles}"
+            else: 
+                group = f"id " + " ".join([str(part) for part in particles])
 
         self._perturb_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
-            if not types is None:
-                f.write(
-                        f"\ngroup group_perturb_{self._perturb_iter} type "
-                        + " ".join(str(type) for type in types)
-                        + "\n")
-                f.write(
-                    f"fix fix_perturb_{self._perturb_iter} group_perturb_{self._perturb_iter} gravity {magnitude} vector {xdir} {ydir} {zdir}\n"
-                )
-            if not particles is None:
-                f.write(
-                    f"\ngroup group_perturb_{self._move_iter} id "
-                    + " ".join(str(particle) for particle in particles)
-                    + "\n"
-                )
-                f.write(
-                    f"fix fix_perturb_{self._move_iter} group_perturb_{self._move_iter} gravity {magnitude} vector {xdir} {ydir} {zdir}\n"
-                )
+            f.write(f"\ngroup group_perturb_{self._perturb_iter} " + group + "\n")
+            f.write(
+                f"fix fix_perturb_{self._perturb_iter} group_perturb_{self._perturb_iter} gravity {magnitude} vector {xdir} {ydir} {zdir}\n"
+            )
 
         return self._perturb_iter
 
-    def add_viscosity(self, value, type: int = None) -> int:
+    def add_viscosity(self, value, type: Union[List[int],int] = None, particles: Union[List[int],int] = None) -> int:
         """
-        Add viscosity to all atoms or a type of atoms
+        Add viscosity to all atoms or a set of types of atoms or a set of particles of atoms
         value - The strength of the viscosity
-        type - The type of particles to which you want to add viscosity
+        type - The type or list of types of particles to which you want to add viscosity
+        particles - The particle or list of particles to which you want to add viscosity
+
+        If you pass in neither particles nor type, all particles in the simulation get viscous
         Returns: The number of the viscosity for if you want to remove this later
         """
+
+        if not type is None and not particles is None:
+            raise Exception("Can either add viscosity to types of particles or a list of particles, not both")
+        
+        if not type is None:
+            if isinstance(type,int):
+                group = f"type {type}"
+            else: 
+                group = f"type " + " ".join([str(typ) for typ in type])
+        elif not particles is None:
+            if isinstance(particles,int):
+                group = f"id {particles}"
+            else: 
+                group = f"id " + " ".join([str(part) for part in particles])
+        else: group = "all"
+
         self._visc_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write("\n")
-            if not type is None:
-                f.write(f"group group_viscosity_{self._visc_iter} type {type}\n")
+            if group is not "all":
+                f.write(f"group group_viscosity_{self._visc_iter} " + group + "\n")
                 f.write(
                     f"fix fix_viscosity_{self._visc_iter} group_viscosity_{self._visc_iter} viscous {value}\n"
                 )
             else:
-                f.write(f"fix fix_viscosity_{self._visc_iter} all viscous {value}\n")
+                f.write(
+                    f"fix fix_viscosity_{self._visc_iter} all viscous {value}\n"
+                )
+
 
         return self._visc_iter
 

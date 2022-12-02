@@ -46,8 +46,8 @@ if __name__ == "__main__":
 
     # Perturb the beams to buckle to the left or right randomly
     dirs = np.random.rand(len(beam_positions),1)
-    p1 = sim.perturb(types = [i+1 for i in np.where(dirs>0.5)[0].tolist()],xdir = 1)
-    p2 = sim.perturb(types = [i+1 for i in np.where(dirs<=0.5)[0].tolist()],xdir = -1)
+    p1 = sim.perturb(type = [i+1 for i in np.where(dirs>0.5)[0].tolist()],xdir = 1)
+    p2 = sim.perturb(type = [i+1 for i in np.where(dirs<=0.5)[0].tolist()],xdir = -1)
 
     # Add the viscosity, which just helps the simulation from exploding, mimics the normal 
     # damping of air and slight viscoelasticity which we live in but don't appreciate

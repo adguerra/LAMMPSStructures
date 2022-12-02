@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     # Add the viscosity, which just helps the simulation from exploding, mimics the normal 
     # damping of air and slight viscoelasticity which we live in but don't appreciate
-    sim.add_viscosity(viscosity, sheet_type)
+    sim.add_viscosity(viscosity)
 
     # Make the dump files and run the simulation
     sim.design_dump_files(0.005)
