@@ -804,7 +804,7 @@ class Simulation:
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write("\n")
-            if group is not "all":
+            if group != "all":
                 f.write(f"group group_wall_{self._wall_iter} " + group + "\n")
                 group = f"group_wall_{self._wall_iter}"
 
@@ -978,7 +978,7 @@ class Simulation:
         self._visc_iter += 1
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             f.write("\n")
-            if group is not "all":
+            if group != "all":
                 f.write(f"group group_viscosity_{self._visc_iter} " + group + "\n")
                 f.write(
                     f"fix fix_viscosity_{self._visc_iter} group_viscosity_{self._visc_iter} viscous {value}\n"
@@ -991,22 +991,26 @@ class Simulation:
 
         return self._visc_iter
 
-    def remove_something(self, thing: str, number_of_that_thing: int = None):
+    def remove_something(self, thing: str, number_of_that_thing: Union[List[int],int] = None):
         """
         This removes something from the simulation. Inputs:
-        - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles", "gravity", "perturbation", "move", and "walls"
+        - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles" (a list of particle ids),
+            "type" (a type of particles), "gravity", "perturbation", "move", and "walls"
         - number_of_that_thing: The number of the thing you want to remove
+
+        NOTE: If you
         """
         if thing not in [
             "viscosity",
             "particles",
+            "type",
             "gravity",
             "perturbation",
             "move",
             "walls",
         ]:
             raise Exception(
-                "This is not something that I can remove, I can only remove either 'viscosity', 'particles', 'perturbation, 'move', 'walls', or 'gravity' right now"
+                "This is not something that I can remove, I can only remove either 'viscosity', 'particles','type', 'perturbation, 'move', 'walls', or 'gravity' right now"
             )
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
@@ -1018,10 +1022,19 @@ class Simulation:
                 f.write(f"unfix fix_perturb_{number_of_that_thing}\n")
             if thing == "move":
                 f.write(f"unfix fix_move_{number_of_that_thing}\n")
-            if thing == "particles":
+            if thing == "type":
                 index_drop = self._particles[ self._particles['type'] == number_of_that_thing ].index
                 self._particles.drop(index_drop , inplace=True)
                 f.write(f"group group_delete type {number_of_that_thing}\n")
+                f.write(f"delete_atoms group group_delete\n")
+                f.write(f"group group_delete delete\n")
+            if thing == "particles":
+                self._particles.drop(index=number_of_that_thing, inplace=True)
+                if isinstance(number_of_that_thing,int):
+                    f.write(f"group group_delete id {number_of_that_thing}\n")
+                else:
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                f.write(f"delete_bonds group_delete multi any\n")
                 f.write(f"delete_atoms group group_delete\n")
                 f.write(f"group group_delete delete\n")
             if thing == "walls":
