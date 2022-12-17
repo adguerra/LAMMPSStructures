@@ -994,9 +994,20 @@ class Simulation:
     def remove_something(self, thing: str, number_of_that_thing: Union[List[int],int] = None):
         """
         This removes something from the simulation. Inputs:
-        - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles" (a list of particle ids),
-            "type" (a type of particles), "gravity", "perturbation", "move", and "walls"
+        - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles",
+            "type", "bonds", "angles" "gravity", "perturbation", "move", and "walls"
         - number_of_that_thing: The number of the thing you want to remove
+
+        If thing is ___ then number_of_that_thing is ___ :
+        - viscosity: the viscosity number
+        - particles: a list of particle ids
+        - type: a type of particles
+        - bonds: if you pass in an int, number_of_that_thing is a type of bond. If you pass in a list, number_of_that_thing is a list of particles,
+            the bonds between which will be deleted for example, if you pass in [1,2,3], all of the angles between particles 1,2, and 3 will be deleted.
+            Be warned however, if particle 4 is bonded to particle 3, that bond will not be removed.
+        - angles: if you pass in an int, number_of_that_thing is a type of angle. If you pass in a list, number_of_that_thing is a list of particles,
+            the angles between which will be deleted, for example, if you pass in [1,2,3], all of the angles between particles 1,2, and 3 will be deleted.
+            Be warned however, if particle 4 is angled to particle 3, that angle will not be removed.
 
         NOTE: If you
         """
@@ -1008,9 +1019,11 @@ class Simulation:
             "perturbation",
             "move",
             "walls",
+            "angles",
+            "bonds"
         ]:
             raise Exception(
-                "This is not something that I can remove, I can only remove either 'viscosity', 'particles','type', 'perturbation, 'move', 'walls', or 'gravity' right now"
+                "This is not something that I can remove, I can only remove either 'viscosity', 'particles','type', 'bonds', 'angles', 'perturbation, 'move', 'walls', or 'gravity' right now"
             )
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
@@ -1037,6 +1050,20 @@ class Simulation:
                 f.write(f"delete_bonds group_delete multi any\n")
                 f.write(f"delete_atoms group group_delete\n")
                 f.write(f"group group_delete delete\n")
+            if thing == "bonds":
+                if isinstance(number_of_that_thing,int):
+                    f.write(f"delete_bonds all bond {number_of_that_thing}\n")
+                else:
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                    f.write(f"delete_bonds group_delete bond 1*\n")
+                    f.write(f"group group_delete delete\n")
+            if thing == "angles":
+                if isinstance(number_of_that_thing,int):
+                    f.write(f"delete_bonds all angle {number_of_that_thing}\n")
+                else:
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                    f.write(f"delete_bonds group_delete angle *\n")
+                    f.write(f"group group_delete delete\n")
             if thing == "walls":
                 if self._walls[number_of_that_thing - 1][1]:
                     f.write(f"unfix fix_walls_{number_of_that_thing}\n")
