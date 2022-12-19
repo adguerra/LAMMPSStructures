@@ -2,36 +2,27 @@
 
 NOTE: Can't have more than 32 groups
 
-The goal of this repository is to provide some examples and source code for the use of LAMMPS as a simulation tool for elastic materials. These materials are traditionally simulated using a finite element software, which has the benefit that it can model complex geometries, but often these softwares have a very hard time modeling contact and other complex boundary conditions. For instance, when roots dig into soil or when cells jam on the surface of the Extra-Cellular Matrix or when birds build a nest, there is a coupling either between many elastic bodies in contact, or between granular and elastic materials. These would all be nearly impossible to simulate using a finite element software.
+## Intro
 
-On the other hand, LAMMPS, a Discrete Element simulation software, is excellent at handling contact at the expense of geometrical complexity -- almost everything is treated as a sphere. Here we show how we have used the tools in LAMMPS to "glue" spheres into elastic bodies to get the best of both worlds. We give some examples for how we have used this tool so far, and provide some example code to look through. Eventually we would like to turn this repository into a tool, either a general LAMMPS input file which is easy to use, or some sort of GUI or MATLAB script where one could input geometry and load and then run a simulation of their elastic structure
+The goal of this repository is to document and provide some examples for a python package which facilitates the use of LAMMPS as a simulation tool for elastic materials. This python package does not simulate things on its own, rather, it contains a class and functions that allow you to write a set of files which can then be run with LAMMPS.
+
+Elastic structures are traditionally simulated using a finite element software, which has the benefit that it can model complex geometries. However, often these softwares have a very hard time modeling contact and other complex boundary conditions. For instance, when roots dig into soil or when cells jam on the surface of the Extra-Cellular Matrix or when birds build a nest, there is a coupling either between many elastic bodies in contact, or between granular and elastic materials. These would all be nearly impossible to simulate using a finite element software.
+
+On the other hand, LAMMPS, a Discrete Element simulation software, is excellent at handling contact at the expense of geometrical complexity -- almost everything is treated as a sphere. In a couple of recent papers [[1](https://arxiv.org/abs/2209.05660),[2](https://arxiv.org/abs/2210.11324),[3](https://pubs.rsc.org/en/content/articlelanding/2021/sm/d1sm00787d),[4],[5]], I and others have shown that it is possible to get the best of both worlds. By "gluing" spheres together to form some simple geometries that can be endowed with elastic properties, we can have contact and elasticity in the same simulation. This repository, I hope, should contain everything you need to start doing this yourself.
 
 ## Brief Tour
 
-In this main folder we have a first draft of a PDF of the derivation of all of the interatomic forces -- PairPotentialDerivations.pdf. Until further notice we recommend instead referring to [this publication](https://pubs.rsc.org/en/content/articlelanding/2021/sm/d1sm00787d) for a more thorough, well-edited, and specific derivation of the pair potentials for 1-d elastic structures.
+We have three main directories in this repo:
 
-We split our examples into two categories:
+ - `lammps_pypack`: This contains the python package that we will use to make the files that will allow us to simulate elastic and granular materials
+ - `examples`: These are some examples of this package being used in action. Some of these examples are systems that we have studied in specific publications, but others are just examples that we thought would be intersting for future study, or which display the capacity of this tool.
+ - `validation`: Here there are some simulations which we validate either theoretically or against other simulations in COMSOL. This directory is comparatively scant, just because we have also performed validation as part of some of the studies cited earlier which use this tool [[1](https://arxiv.org/abs/2209.05660),[2](https://arxiv.org/abs/2210.11324),[3](https://pubs.rsc.org/en/content/articlelanding/2021/sm/d1sm00787d),[4],[5]]
 
- - 1d structures, which are "grains" or "particles" arranged in a line to form an elastic beam
- - 2d structures, which are particles arranged in a triangular lattice to form an elastic sheet
+ ## How to use this tool
 
-In each of these directories I will have some verification (probably in COMSOL, or with experiments from our lab) for some different kind of structures, videos of some of our simulations and some heavily commented example files. 
+To begin to use this tool, clone this repository and `pip install lammpsWithPython` from within the `lammps_pypack` folder. You can then run an example file, or make a new file which sets up some simulation that you are intersted. Any time you use this tool, it will create a new folder with a name that you specify, and within that folder, it will write some files that LAMMPS will need to run a simulation. It will always write a file called `in.main_file`, which is the main input LAMMPS file that you will eventually run. This sets up the simulation, determines the dimensionality and size of your simulation box, etc. The tool may also create some secondary files which will be accessed by `in.main_file`. For example, if you want to insert a grain (a sphere) in your simulation box, you will call the `add_grains` command, and input to that command, among other things, the coordinates of those grains. When you do that, a new file will be written, called `grains_*.txt` where the asterisk is some integer (namely, 1 if this is the first time you have inserted grains, 2 if it is the second, etc.). Calling the `add_grains` command also writes a line to `in.main_file` (`include grains_*.txt`) which makes LAMMPS look in the `grains_*.txt` file for the locations of the grains. You therefore have to keep all of these files together, which is why they are all written together in a new folder every time you use the tool.
 
-The most heavily commented, and also the simplest, LAMMPS input file is LAMMPSStructures/1d/ValidateCylindricalBeams/in.cylindricalValidation, and the other 1d files are commented where they differ from that file. If you are new to this repository or to LAMMPS I would start there. The most heavily commented 2d file is LAMMPSStructures/2d/REPLACEWHENYOUVALIDATE2D.
-
- To run any of these files you will need to download LAMMPS
-
-List and description of files: 
-
-1d
- -  ValidateCylindricalBeams: Code to perform a test of the buckling strain of cylindrical beams as well as comparrison to COMSOL
- -  ValidateRectangularBeams: Same as above but with rectangular beams
- -  ValidateLoops: Code to test the shape of compressed rings and comparrison to theory
- -  2BeamCompetitionRectangular: Code which compresses two beams next to one another
- -  ColumnWithLoops: Code for a column of grains confined with elastic loops
-
-2d
- - Still working... 
+To run any of these files you will first need to download and LAMMPS. Alternatively, there are also some pre-built versions of LAMMPS. Once you have LAMMPS installed, you can go into the folder which contains `in.main_file` and input it to LAMMPS (something like `lmp_serial -i in.main_file`). This tool is currently set to run with the LAMMPS version which was released on June 23, 2022, and so if something doesn't work, let me know and I can try to adjust it! Or adjust it yourself (thats what Git is for right??).
 
 
 ## Some Examples
