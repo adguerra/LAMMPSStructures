@@ -11,7 +11,7 @@ if __name__ == "__main__":
     sim = Simulation(simname, 3, 0.4, 0.4, 0.4)
 
     grain_diameter = 0.013
-    E_grains = 10 ** 5
+    E_grains = 10 ** 6
     contact_properties = {
         "restitution" : 0.4,
         "poissons": 0.35,
@@ -25,12 +25,14 @@ if __name__ == "__main__":
     loop_thickness = 0.0015
     E_loop = 10 ** 4
     n_particles_per_loop = 180
+    # This next thing can be used to independantly control the bending stiffness of the loops
+    bending_multiplier = 1 
 
-    loop_separation = 0.9 * grain_diameter
+    loop_separation = 1.1 * grain_diameter
     number_of_grains = 375
-    timestep = 0.000001
+    timestep = 0.0000005
     density = 0.01
-    viscosity1 = 1 * 10 ** -7
+    viscosity1 = 1 * 10 ** -6
     viscosity2 = 1 * 10 ** -9
 
     column_radius = 0.04
@@ -53,12 +55,12 @@ if __name__ == "__main__":
 
     # Since we initialize some grains inside of one another, its nice to have viscosity at the beginning
     grain_viscosity = sim.add_viscosity(viscosity1, grains_type)
-    sim.design_dump_files(0.005, ["pressure", "bending_energy", "stretching_energy"])
-    sim.run_simulation(0.25, timestep)
+    sim.design_dump_files(0.05, ["pressure", "bending_energy", "stretching_energy"])
+    sim.run_simulation(0.05, timestep)
 
     # Run it for another bit so the grains can settle
     sim.remove_something('viscosity', grain_viscosity)
-    sim.run_simulation(0.25, timestep)
+    sim.run_simulation(0.45, timestep)
 
     ## Now we will remove the walls and add the loops, and add a wall outside of the loops
     sim.remove_something("walls", hold1)
@@ -66,7 +68,7 @@ if __name__ == "__main__":
     loop_types = []
     loop_heights = np.arange(-sim._height/2 + loop_separation, -sim._height/2 + column_height, loop_separation)
     for lh in loop_heights:
-        lt,_,_ = sim.add_loop(n_particles_per_loop,np.array([0,0,lh]),column_radius-loop_thickness/2, np.array([0,0,1]),loop_thickness,E_loop,density)
+        lt,_,_ = sim.add_loop(n_particles_per_loop,np.array([0,0,lh]),column_radius-loop_thickness/2, np.array([0,0,1]),loop_thickness,E_loop,density,bending_multiplier=bending_multiplier)
         sim.turn_on_granular_potential(grains_type, lt,E_grains, contact_properties)
         loop_types.append(lt)
     

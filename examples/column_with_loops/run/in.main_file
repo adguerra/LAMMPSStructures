@@ -1,0 +1,201 @@
+atom_style hybrid angle sphere
+units si
+processors	* * 1
+comm_modify vel yes
+
+region simulationStation block -0.2 0.2 -0.2 0.2 -0.2 0.2
+create_box 100 simulationStation bond/types 100000 extra/bond/per/atom 100 angle/types 10000 extra/angle/per/atom 100
+change_box	all boundary f f f
+
+pair_style hybrid/overlay granular lj/cut 0
+pair_coeff  * * granular hertz/material 0 0 0 tangential linear_nohistory 0 0
+pair_coeff  * * lj/cut 0 0 0
+
+special_bonds lj/coul 0 1.0 1.0
+bond_style harmonic
+angle_style cosine
+
+bond_coeff * 0 0
+angle_coeff * 0
+fix integration all nve/sphere
+neigh_modify page 500000 one 50000
+
+
+### Here we will begin to include particles ###
+
+
+include grains_1.txt 
+set type 1 diameter 0.013
+set type 1 density 0.01
+
+fix fix_walls_1 all wall/gran/region granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji region simulationStation
+
+group group_wall_2 type 1
+region region_2 cylinder z 0 0 0.0385 -0.2 0.2
+fix fix_walls_2 group_wall_2 wall/gran/region granular hertz/material 1000000 0.25 0.25 tangential linear_nohistory 0 0 region region_2
+pair_coeff 1 1 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+fix grav all gravity 9.8 vector 0 0 -1
+
+group group_viscosity_1 type 1
+fix fix_viscosity_1 group_viscosity_1 viscous 1e-06
+
+compute stress all stress/atom NULL
+compute contacts all contact/atom
+variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)
+compute bendingE all pe/atom angle
+compute stretchingE all pe/atom bond
+dump pump all custom 1 out*.dump id type radius x y z v_pressure c_bendingE c_stretchingE
+dump_modify pump pad 11
+
+timestep 5e-07
+dump_modify pump every 100000
+run 100000
+unfix fix_viscosity_1
+
+timestep 5e-07
+dump_modify pump every 100000
+run 900000
+unfix fix_walls_2
+region region_2 delete
+group group_wall_2 delete
+
+include beam_1.txt 
+set type 2 diameter 0.0015
+set type 2 density 0.01
+bond_coeff 1 8.211595485461014 0.0013700139053267556
+include bonds_1.txt
+angle_coeff 1 3.0793483070478806e-06
+include angles_1.txt
+pair_coeff 1 2 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_2.txt 
+set type 3 diameter 0.0015
+set type 3 density 0.01
+bond_coeff 2 8.211595485461014 0.0013700139053267556
+include bonds_2.txt
+angle_coeff 2 3.0793483070478806e-06
+include angles_2.txt
+pair_coeff 1 3 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_3.txt 
+set type 4 diameter 0.0015
+set type 4 density 0.01
+bond_coeff 3 8.211595485461014 0.0013700139053267556
+include bonds_3.txt
+angle_coeff 3 3.0793483070478806e-06
+include angles_3.txt
+pair_coeff 1 4 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_4.txt 
+set type 5 diameter 0.0015
+set type 5 density 0.01
+bond_coeff 4 8.211595485461014 0.0013700139053267556
+include bonds_4.txt
+angle_coeff 4 3.0793483070478806e-06
+include angles_4.txt
+pair_coeff 1 5 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_5.txt 
+set type 6 diameter 0.0015
+set type 6 density 0.01
+bond_coeff 5 8.211595485461014 0.0013700139053267556
+include bonds_5.txt
+angle_coeff 5 3.0793483070478806e-06
+include angles_5.txt
+pair_coeff 1 6 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_6.txt 
+set type 7 diameter 0.0015
+set type 7 density 0.01
+bond_coeff 6 8.211595485461014 0.0013700139053267556
+include bonds_6.txt
+angle_coeff 6 3.0793483070478806e-06
+include angles_6.txt
+pair_coeff 1 7 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_7.txt 
+set type 8 diameter 0.0015
+set type 8 density 0.01
+bond_coeff 7 8.211595485461014 0.0013700139053267556
+include bonds_7.txt
+angle_coeff 7 3.0793483070478806e-06
+include angles_7.txt
+pair_coeff 1 8 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_8.txt 
+set type 9 diameter 0.0015
+set type 9 density 0.01
+bond_coeff 8 8.211595485461014 0.0013700139053267556
+include bonds_8.txt
+angle_coeff 8 3.0793483070478806e-06
+include angles_8.txt
+pair_coeff 1 9 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_9.txt 
+set type 10 diameter 0.0015
+set type 10 density 0.01
+bond_coeff 9 8.211595485461014 0.0013700139053267556
+include bonds_9.txt
+angle_coeff 9 3.0793483070478806e-06
+include angles_9.txt
+pair_coeff 1 10 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_10.txt 
+set type 11 diameter 0.0015
+set type 11 density 0.01
+bond_coeff 10 8.211595485461014 0.0013700139053267556
+include bonds_10.txt
+angle_coeff 10 3.0793483070478806e-06
+include angles_10.txt
+pair_coeff 1 11 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+include beam_11.txt 
+set type 12 diameter 0.0015
+set type 12 density 0.01
+bond_coeff 11 8.211595485461014 0.0013700139053267556
+include bonds_11.txt
+angle_coeff 11 3.0793483070478806e-06
+include angles_11.txt
+pair_coeff 1 12 granular &
+hertz/material 1000000 0.4 0.35 tangential mindlin NULL 1 0.5 &
+rolling sds 897867.5645342312 1 0.5 twisting marshall damping tsuji
+
+region region_3 cylinder z 0 0 0.04 -0.2 0.2
+fix fix_walls_3 all wall/gran/region granular hertz/material 1000000 0.25 0.25 tangential linear_nohistory 0 0 region region_3
+
+fix fix_viscosity_2 all viscous 1e-09
+
+timestep 5e-07
+dump_modify pump every 100000
+run 300000
+unfix fix_walls_3
+region region_3 delete
+
+timestep 5e-07
+dump_modify pump every 100000
+run 2000000
