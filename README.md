@@ -1,7 +1,5 @@
 # LAMMPSStructures
 
-NOTE: Can't have more than 32 groups
-
 ## Intro
 
 The goal of this repository is to document and provide some examples for a python package which facilitates the use of [LAMMPS](https://www.lammps.org/#gsc.tab=0) as a simulation tool for elastic materials. This python package does not simulate things on its own, rather, it contains a class and functions that allow you to write a set of files which can then be run with LAMMPS.
@@ -27,11 +25,6 @@ Any time you use this tool, it will create a new folder with a name that you spe
 This multiple files business may seem complicated at first, but I hope that after you use this tool a couple of times, you'll appreciate that it creates a cleaner version of `in.main_file`, since long lists of particles and bonds are stored in other files.
 
 To run the `in.main_file` of any of these simulations, you will first need to [download and install LAMMPS](https://docs.lammps.org/Install.html). Once you have LAMMPS installed, you can go into the folder which contains `in.main_file` and input it to LAMMPS (something like `lmp_serial -i in.main_file`, this will depend on how lammps is built on your machine). This tool is currently set to run with the LAMMPS version which was released on June 23, 2022, and so if something doesn't work, let me know and I can try to adjust it! Or adjust it yourself (thats what Git is for right??).
-
-## Functions in the `lammpsWithPython.lammps_object` tool
-
-
-
 
 ## Some Other Examples
 
