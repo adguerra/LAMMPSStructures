@@ -1,0 +1,914 @@
+group elastic_connect type 2
+
+
+group now id 1
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 2 1 ${mindist}
+create_bonds many now elastic_connect 2 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 3 1 ${mindist}
+create_bonds many now notTheClosest 3 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 4 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 4 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 2
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 5 1 ${mindist}
+create_bonds many now elastic_connect 5 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 6 1 ${mindist}
+create_bonds many now notTheClosest 6 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 7 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 7 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 3
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 8 1 ${mindist}
+create_bonds many now elastic_connect 8 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 9 1 ${mindist}
+create_bonds many now notTheClosest 9 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 10 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 10 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 4
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 11 1 ${mindist}
+create_bonds many now elastic_connect 11 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 12 1 ${mindist}
+create_bonds many now notTheClosest 12 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 13 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 13 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 5
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 14 1 ${mindist}
+create_bonds many now elastic_connect 14 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 15 1 ${mindist}
+create_bonds many now notTheClosest 15 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 16 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 16 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 6
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 17 1 ${mindist}
+create_bonds many now elastic_connect 17 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 18 1 ${mindist}
+create_bonds many now notTheClosest 18 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 19 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 19 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 7
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 20 1 ${mindist}
+create_bonds many now elastic_connect 20 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 21 1 ${mindist}
+create_bonds many now notTheClosest 21 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 22 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 22 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 8
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 23 1 ${mindist}
+create_bonds many now elastic_connect 23 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 24 1 ${mindist}
+create_bonds many now notTheClosest 24 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 25 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 25 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 9
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 26 1 ${mindist}
+create_bonds many now elastic_connect 26 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 27 1 ${mindist}
+create_bonds many now notTheClosest 27 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 28 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 28 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 10
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 29 1 ${mindist}
+create_bonds many now elastic_connect 29 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 30 1 ${mindist}
+create_bonds many now notTheClosest 30 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 31 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 31 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 11
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 32 1 ${mindist}
+create_bonds many now elastic_connect 32 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 33 1 ${mindist}
+create_bonds many now notTheClosest 33 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 34 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 34 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 12
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 35 1 ${mindist}
+create_bonds many now elastic_connect 35 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 36 1 ${mindist}
+create_bonds many now notTheClosest 36 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 37 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 37 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 13
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 38 1 ${mindist}
+create_bonds many now elastic_connect 38 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 39 1 ${mindist}
+create_bonds many now notTheClosest 39 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 40 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 40 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 14
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 41 1 ${mindist}
+create_bonds many now elastic_connect 41 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 42 1 ${mindist}
+create_bonds many now notTheClosest 42 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 43 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 43 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 15
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 44 1 ${mindist}
+create_bonds many now elastic_connect 44 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 45 1 ${mindist}
+create_bonds many now notTheClosest 45 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 46 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 46 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 16
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 47 1 ${mindist}
+create_bonds many now elastic_connect 47 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 48 1 ${mindist}
+create_bonds many now notTheClosest 48 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 49 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 49 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 17
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 50 1 ${mindist}
+create_bonds many now elastic_connect 50 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 51 1 ${mindist}
+create_bonds many now notTheClosest 51 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 52 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 52 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 18
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 53 1 ${mindist}
+create_bonds many now elastic_connect 53 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 54 1 ${mindist}
+create_bonds many now notTheClosest 54 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 55 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 55 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 19
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 56 1 ${mindist}
+create_bonds many now elastic_connect 56 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 57 1 ${mindist}
+create_bonds many now notTheClosest 57 0 ${rhinow}
+region rtwoplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group gtwoplus region rtwoplus
+group notTheClosestOrTheSecondClosest subtract all gtwoplus
+uncompute cmindist
+compute cmindist notTheClosestOrTheSecondClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 58 1 ${mindist}
+create_bonds many now notTheClosestOrTheSecondClosest 58 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosestOrTheSecondClosest delete
+group gtwoplus delete
+region rtwoplus delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+group elastic_connect delete
