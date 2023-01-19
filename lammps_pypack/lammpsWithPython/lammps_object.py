@@ -620,6 +620,140 @@ class Simulation:
 
         return self._type_iter, self._bond_type_iter, self._angle_type_iter
 
+    def add_cylindrical_sheet(
+        self,
+        bottom_center: np.array,
+        radius: float,
+        height: float,
+        normal: np.array,
+        mesh_particle_spacing: float,
+        energetic_thickness: float,
+        youngs_modulus: float,
+        density: float,
+        mesh_particle_diameter: float = None,
+        strecthing_multiplier: float = 1,
+        bending_multiplier: float = 1,
+    ) -> Tuple[int, int, int]:
+        """
+        Create a cylindrical sheet out of particles, replete with bonds and angles to give the sheet mechanical properties
+        Inputs:
+        - center: A 1x3 np.array with the x, y, z coordinates of the center of the bottom ring of the cylinder
+        - radius: The radius of the sheet
+        - normal: The vector which points down the center of the cylinder
+        - mesh_particle_spacing: The resting distance between mesh particles in the sheet
+        - energetic_thickness: This term is what is used to calculate the bending and stretching modulus of the sheet (along with the youngs modulus). 
+            NOTE: changing this does not change any physical sizes in the simulation, only the energy in the bonds and angles between particles.
+            Explicitly, for you elasticity mathematicians out there, this is h.
+        - youngs_modulus: The Young's modulus of the sheet material
+        - density: The density of the particles which make up the sheet. NOTE that this is different from
+            the density of the sheet itself
+        - mesh_particle_diameter: This term changes the diameter of the mesh particles. If this is not set (left set to None),
+            the mesh particle diameter will simply be set to the mesh particle spacing, such that all of the particles in the sheet
+            will look like they're right next to each other
+        - stretching_multiplier: In case you want to manually edit the stretching energy
+        - bending_multiplier: In case you want to manually edit the bending energy
+        Outputs:
+        - The number of the particles, bonds, and angles that make up this sheet
+        """
+        self._num_sheets += 1
+
+        geometric_thickness = mesh_particle_diameter if mesh_particle_diameter else mesh_particle_spacing
+
+        # First I need to find two vectors that are perpendicular to the norm vector
+        x1 = np.array([0, 0, 0])
+        for i in range(3):
+            if normal[i] != 0:
+                x1[i - 1] = normal[i]
+                x1[i] = -normal[i - 1]
+                break
+        x2 = np.cross(x1, normal)
+
+        for vect in [normal, x1, x2]:
+            vect = vect / np.linalg.norm(vect)
+
+        dth = 2 * np.pi / np.round(2 * np.pi * radius / (mesh_particle_spacing * 3 ** 0.5))
+        thetas1 = np.arange(0,2 * np.pi,dth)
+        thetas2 = thetas1 + dth / 2
+        x = radius * np.cos(thetas1)
+        y = radius * np.sin(thetas1)
+        actuald = (((x[1]-x[0]) ** 2 + (y[1]-y[0]) **2) ** 0.5)/(3 ** 0.5)
+        print(actuald)
+
+        numrings = round(2*height/actuald)
+        coords = [[0,0,0]]
+        for ring in range(numrings):
+            thetas = thetas1 if ring % 2 == 0 else thetas2
+            for theta in thetas:
+                coords.append(list(bottom_center + radius * (x1 * np.cos(theta) + x2 * np.sin(theta)) + normal * ring * actuald / 2))
+        del coords[0]
+        coords = np.array(coords)
+
+        print(f"\n### Creating a circular sheet with {coords.shape[0]} particles ###")
+
+        mesh_particle_spacing = actuald
+
+        n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
+        tuplets = [[0, 0]]
+        for i in range(coords.shape[0]):
+            a = 0
+            for j in range(i + 1, coords.shape[0]):
+                if _dist(coords,i,j)< mesh_particle_spacing * 1.01:
+                    tuplets.append([n_so_far + i + 1, n_so_far + j + 1])
+                    a += 1
+                    if a == 3:break
+        del tuplets[0]
+        tuplets = np.array(tuplets)
+
+        triplets = [[0, 0, 0]]
+        for i in range(coords.shape[0]):
+            a = 0
+            for j in range(i + 1, coords.shape[0]):
+                if _dist(coords,i,j) < mesh_particle_spacing * 1.05:
+                    for k in range(j + 1, coords.shape[0]):
+                        if (
+                            _dist(coords,j,k) < mesh_particle_spacing * 1.05
+                            and _dist(coords,i,k) > mesh_particle_spacing * 1.9
+                        ):
+                            triplets.append([n_so_far + i + 1, n_so_far + j + 1, n_so_far + k + 1])
+                            break
+                    a += 1
+                    if a == 3:break
+
+        del triplets[0]
+        triplets = np.array(triplets)
+
+        self.add_grains(
+            coords, geometric_thickness, density, f"sheet_{self._num_sheets}.txt"
+        )
+        # Thickness
+        h = energetic_thickness
+        # rest length of the bonds is the spacing between the particles
+        rest_length = mesh_particle_spacing
+        # dfactor is the diameter of a particle divided by the distance between particles in the beam
+        bond_stiffness = (
+            strecthing_multiplier * youngs_modulus * h * (3 ** 0.5) / 4
+        )
+        angle_stiffness = (
+            (4 / (3 * (3 ** 2)))
+            * bending_multiplier
+            * youngs_modulus
+            * (h ** 3)
+            / (12 * (1 - (1 / 3) ** 2))
+        )
+
+        self.construct_many_bonds(tuplets, bond_stiffness, rest_length)
+        self.construct_many_angles(triplets, angle_stiffness)
+
+        if youngs_modulus > 0:
+            m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
+            k = bond_stiffness * 2  # Somehow include angle_stiffness
+            if self._timestep:
+                self._timestep = min(self._timestep, ((1 / 6) * m / k) ** 0.5)  # TODO
+            else:
+                self._timestep = ((1 / 6) * m / k) ** 0.5
+
+        return self._type_iter, self._bond_type_iter, self._angle_type_iter
+
     def construct_many_bonds(
         self, tuplets: np.array, stiffness: float, rest_length: float
     ) -> int:
