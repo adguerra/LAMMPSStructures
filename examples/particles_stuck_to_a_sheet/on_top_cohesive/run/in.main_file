@@ -1,0 +1,85 @@
+atom_style hybrid angle sphere
+units si
+processors	* * 1
+comm_modify vel yes
+
+region simulationStation block -0.25 0.25 -0.25 0.25 -0.1 0.1
+create_box 100 simulationStation bond/types 100000 extra/bond/per/atom 100 angle/types 10000 extra/angle/per/atom 100
+change_box	all boundary f f f
+
+pair_style hybrid/overlay granular lj/cut 0
+pair_coeff  * * granular hertz/material 0 0 0 tangential linear_nohistory 0 0
+pair_coeff  * * lj/cut 0 0 0
+
+special_bonds lj/coul 0 1.0 1.0
+bond_style harmonic
+angle_style cosine
+
+bond_coeff * 0 0
+angle_coeff * 0
+fix integration all nve/sphere
+neigh_modify page 500000 one 50000
+
+
+### Here we will begin to include particles ###
+
+
+include grains_1.txt 
+set type 1 diameter 0.03
+set type 1 density 0.01
+
+group group_wall_1 type 1
+region region_1 block -0.25 0.25 -0.25 0.25 -0.002 0.1
+fix fix_walls_1 group_wall_1 wall/gran/region granular hertz/material 1000 0.25 0.25 tangential linear_nohistory 0 0 region region_1
+
+group group_wall_2 type 1
+region region_2 block -0.25 0.25 -0.25 0.25 -0.1 0.002
+fix fix_walls_2 group_wall_2 wall/gran/region granular hertz/material 1000 0.25 0.25 tangential linear_nohistory 0 0 region region_2
+
+group group_wall_3 type 1
+region region_3 block -0.053 0.053 -0.053 0.053 -0.1 0.1
+fix fix_walls_3 group_wall_3 wall/gran/region granular hertz/material 1000 0.25 0.25 tangential linear_nohistory 0 0 region region_3
+pair_coeff 1 1 granular hertz/material 1000 0 0.5 tangential linear_nohistory 0 0
+
+group group_viscosity_1 type 1
+fix fix_viscosity_1 group_viscosity_1 viscous 0.001
+
+compute stress all stress/atom NULL
+compute contacts all contact/atom
+variable pressure atom 2*(c_stress[1]+c_stress[2]+c_stress[3])/(c_contacts+.001)
+compute bendingE all pe/atom angle
+compute stretchingE all pe/atom bond
+dump pump all custom 1 out*.dump id type radius x y z fx fy fz v_pressure c_bendingE c_stretchingE
+dump_modify pump pad 11
+
+timestep 1e-05
+dump_modify pump every 5000
+run 50000
+unfix fix_walls_1
+region region_1 delete
+group group_wall_1 delete
+unfix fix_walls_2
+region region_2 delete
+group group_wall_2 delete
+unfix fix_walls_3
+region region_3 delete
+group group_wall_3 delete
+unfix fix_viscosity_1
+
+include sheet_1.txt 
+set type 2 diameter 0.004
+set type 2 density 0.5
+bond_coeff 1 8.660254037844386 0.004
+include bonds_1.txt
+angle_coeff 1 1.1111111111111112e-06
+include angles_1.txt
+
+group group_viscosity_2 type 2
+fix fix_viscosity_2 group_viscosity_2 viscous 1e-05
+pair_coeff 1 1 lj/cut 1e-07 0.026726961544210177 0.075
+pair_coeff 1 2 lj/cut 1e-07 0.015234368080199802 0.075
+pair_coeff 1 2 granular hertz/material 1000 0 0.5 tangential linear_nohistory 0 0
+
+timestep 1e-06
+dump_modify pump every 50000
+run 500000

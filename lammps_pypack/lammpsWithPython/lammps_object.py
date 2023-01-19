@@ -496,6 +496,130 @@ class Simulation:
 
         return self._type_iter, self._bond_type_iter, self._angle_type_iter
 
+
+    def add_rectangular_sheet(
+        self,
+        center: np.array,
+        side_length1: float,
+        side_length2: float,
+        # normal: np.array,
+        mesh_particle_spacing: float,
+        energetic_thickness: float,
+        youngs_modulus: float,
+        density: float,
+        mesh_particle_diameter: float = None,
+        strecthing_multiplier: float = 1,
+        bending_multiplier: float = 1,
+    ) -> Tuple[int, int, int]:
+        """
+        Create a rectangular sheet out of particles, replete with bonds and angles to give the sheet mechanical properties
+        NOTE: For now, all sheets have a normal of [0,0,1]. I might change this later (TODO)
+        Inputs:
+        - center: A 1x3 np.array with the x, y, z coordinates of the center of the sheet
+        - side_length1: The x-dimension length of the sheet
+        - side_length2: The y-dimension length of the sheet
+        - mesh_particle_spacing: The resting distance between mesh particles in the sheet
+        - energetic_thickness: This term is what is used to calculate the bending and stretching modulus of the sheet (along with the youngs modulus). 
+            NOTE: changing this does not change any physical sizes in the simulation, only the energy in the bonds and angles between particles.
+            Explicitly, for you elasticity mathematicians out there, this is h.
+        - youngs_modulus: The Young's modulus of the sheet material
+        - density: The density of the particles which make up the sheet. NOTE that this is different from
+            the density of the sheet itself
+        - mesh_particle_diameter: This term changes the diameter of the mesh particles. If this is not set (left set to None),
+            the mesh particle diameter will simply be set to the mesh particle spacing, such that all of the particles in the sheet
+            will look like they're right next to each other
+        - stretching_multiplier: In case you want to manually edit the stretching energy
+        - bending_multiplier: In case you want to manually edit the bending energy
+        Outputs:
+        - The number of the particles, bonds, and angles that make up this sheet
+        """
+        self._num_sheets += 1
+
+        geometric_thickness = mesh_particle_diameter if mesh_particle_diameter else mesh_particle_spacing
+
+        coords = [[0, 0, 0]]
+        for i in range(
+            round(- side_length1 * 1.5 / mesh_particle_spacing), round(side_length1 * 1.5 / mesh_particle_spacing)
+        ):
+            for j in range(
+                round(-side_length2 * 1.5 / mesh_particle_spacing),
+                round(side_length2 * 1.5 / mesh_particle_spacing),
+            ):
+                if i % 2 == 0:
+                    x = i * np.cos(np.pi / 6) * mesh_particle_spacing
+                    y = j * mesh_particle_spacing
+                else:
+                    x = i * np.cos(np.pi / 6) * mesh_particle_spacing
+                    y = (j - np.sin(np.pi / 6)) * mesh_particle_spacing
+                if abs(x) < side_length1 / 2 and abs(y) < side_length2 / 2 :
+                    coords.append(list(center + np.array([x, y, 0])))
+        del coords[0]
+        coords = np.array(coords)
+
+        print(f"\n### Creating a circular sheet with {coords.shape[0]} particles ###")
+
+        n_so_far = max(self._particles.index) if self._particles.index.size > 0 else 0
+        tuplets = [[0, 0]]
+        for i in range(coords.shape[0]):
+            a = 0
+            for j in range(i + 1, coords.shape[0]):
+                if _dist(coords,i,j)< mesh_particle_spacing * 1.01:
+                    tuplets.append([n_so_far + i + 1, n_so_far + j + 1])
+                    a += 1
+                    if a == 3:break
+        del tuplets[0]
+        tuplets = np.array(tuplets)
+
+        triplets = [[0, 0, 0]]
+        for i in range(coords.shape[0]):
+            a = 0
+            for j in range(i + 1, coords.shape[0]):
+                if _dist(coords,i,j) < mesh_particle_spacing * 1.01:
+                    for k in range(j + 1, coords.shape[0]):
+                        if (
+                            _dist(coords,j,k) < mesh_particle_spacing * 1.01
+                            and _dist(coords,i,k) > mesh_particle_spacing * 1.9
+                        ):
+                            triplets.append([n_so_far + i + 1, n_so_far + j + 1, n_so_far + k + 1])
+                            break
+                    a += 1
+                    if a == 3:break
+
+        del triplets[0]
+        triplets = np.array(triplets)
+
+        self.add_grains(
+            coords, geometric_thickness, density, f"sheet_{self._num_sheets}.txt"
+        )
+        # Thickness
+        h = energetic_thickness
+        # rest length of the bonds is the spacing between the particles
+        rest_length = mesh_particle_spacing
+        # dfactor is the diameter of a particle divided by the distance between particles in the beam
+        bond_stiffness = (
+            strecthing_multiplier * youngs_modulus * h * (3 ** 0.5) / 4
+        )
+        angle_stiffness = (
+            (4 / (3 * (3 ** 2)))
+            * bending_multiplier
+            * youngs_modulus
+            * (h ** 3)
+            / (12 * (1 - (1 / 3) ** 2))
+        )
+
+        self.construct_many_bonds(tuplets, bond_stiffness, rest_length)
+        self.construct_many_angles(triplets, angle_stiffness)
+
+        if youngs_modulus > 0:
+            m = (4 / 3) * np.pi * (geometric_thickness * 0.5) ** 3
+            k = bond_stiffness * 2  # Somehow include angle_stiffness
+            if self._timestep:
+                self._timestep = min(self._timestep, ((1 / 6) * m / k) ** 0.5)  # TODO
+            else:
+                self._timestep = ((1 / 6) * m / k) ** 0.5
+
+        return self._type_iter, self._bond_type_iter, self._angle_type_iter
+
     def construct_many_bonds(
         self, tuplets: np.array, stiffness: float, rest_length: float
     ) -> int:
@@ -594,6 +718,11 @@ class Simulation:
                 "If the hardcore flag is on, you also need to input 'restitution', 'poissons', 'xscaling', 'coeffric', 'gammar', 'rolfric' in the hardcore_dict"
             )
 
+        if not type1 is None and not type2 is None:
+            a = [type1, type2]
+            type1 = min(a)
+            type2 = max(a)
+
         print(
             f"\n### Initiating a granular potential between type {'all' if type1 is None else type1} and type {'all' if type2 is None else type2} Particles ###"
         )
@@ -620,6 +749,44 @@ class Simulation:
                 f.write(
                     f"pair_coeff {'*' if type1 is None else type1} {'*' if type2 is None else type2} granular hertz/material {youngs_modulus} 0 0.5 tangential linear_nohistory 0 0\n"
                 )
+        pass
+
+    def turn_on_cohesive_potential(
+        self, type1: int = None, type2: int = None, cohesive_strength: float = None, rest_length: float = None, cutoff:float = None
+    ):
+        """
+        Make two types of particles have a cohesive (or repellant) lj potential. This takes in:
+        - type1, type2: The types of particles you want to add an interaction potential to. This is output from methods like "add_grains," "add_beam," etc. 
+        - cohesive_strength: This is epsilon in https://docs.lammps.org/pair_lj.html
+        - rest_length: The rest length of the bonds. This is NOT sigma in https://docs.lammps.org/pair_lj.html
+        - cutoff: If two particles get farther than "cutoff" apart, they will not be coherent any more. This can just be really big,
+            or like 2.5 times rest_length, where the potential would pretty much disappear anyways
+
+        If you don't pass in type2, it will turn on the potential between type1 and all other particles. If you
+        pass in neither type1 nor type2 it will turn on the potential between all particles.
+        
+        """
+
+        if any(thing is None for thing in [cohesive_strength, rest_length, cutoff]):
+            raise Exception(
+                "You must pass in a bond_strength, rest_length, and cutoff, sorry :/. The cutoff can just be really big if you don't actually want one"
+            )
+
+        if not type1 is None and not type2 is None:
+            a = [type1, type2]
+            type1 = min(a)
+            type2 = max(a)
+
+        print(
+            f"\n### Initiating an lj potential between type {'all' if type1 is None else type1} and type {'all' if type2 is None else type2} Particles ###"
+        )
+
+        sigma = rest_length / ( 2 ** (1/6) )
+
+        with open(os.path.join(self._path, "in.main_file"), "a") as f:
+            f.write(
+                f"pair_coeff {'*' if type1 is None else type1} {'*' if type2 is None else type2} lj/cut {cohesive_strength} {sigma} {cutoff}\n"
+            )
         pass
 
     def connect_particles_to_elastic(
@@ -1241,8 +1408,6 @@ class Simulation:
             self._manual_timestep = timestep
     
         pass
-
-
 
 
 def _dist(coords, i, j):
