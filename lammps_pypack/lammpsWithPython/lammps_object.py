@@ -26,7 +26,6 @@ class Simulation:
         - simulation_name: the name of the folder that this script will create and write files to
         - dimension: 2 or 3 for a 2d or 3d simulation
         - length, width, height: the length, width, and height of the box that we are going to run the simulation in
-        - numtypes: The number of "types" of particles that we will 
         - (x,y,z)_bound: whether the x, y, or z boundaries are fixed (f) periodic (p) or shrink-wrapped (s)
         """
         # TODO add 2d
@@ -495,7 +494,6 @@ class Simulation:
                 self._timestep = ((1 / 6) * m / k) ** 0.5
 
         return self._type_iter, self._bond_type_iter, self._angle_type_iter
-
 
     def add_rectangular_sheet(
         self,
