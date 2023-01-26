@@ -227,7 +227,7 @@ class Simulation:
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
-        - The number of the particles, bonds, and angles that make up this beam
+        - The id of the particles, bonds, and angles that make up this beam
         """
         if n_particles<3:
             raise Exception("Your beam must have more than 3 particles")
@@ -308,7 +308,7 @@ class Simulation:
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
-        - The number of the particles, bonds, and angles that make up this loop
+        - The ids of the particles, bonds, and angles that make up this loop
         """
         self._num_beams += 1
 
@@ -406,7 +406,7 @@ class Simulation:
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
-        - The number of the particles, bonds, and angles that make up this sheet
+        - The ids of the particles, bonds, and angles that make up this sheet
         """
         self._num_sheets += 1
 
@@ -529,7 +529,7 @@ class Simulation:
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
-        - The number of the particles, bonds, and angles that make up this sheet
+        - The ids of the particles, bonds, and angles that make up this sheet
         """
         self._num_sheets += 1
 
@@ -651,7 +651,7 @@ class Simulation:
         - stretching_multiplier: In case you want to manually edit the stretching energy
         - bending_multiplier: In case you want to manually edit the bending energy
         Outputs:
-        - The number of the particles, bonds, and angles that make up this sheet
+        - The ids of the particles, bonds, and angles that make up this sheet
         """
         self._num_sheets += 1
 
@@ -762,7 +762,7 @@ class Simulation:
         - stiffness: The stiffness of these bonds
         - rest_length: The rest length of the bonds
         Outputs:
-        - The number of these bonds
+        - The ids of these bonds
         """
         self._bond_type_iter += 1
 
@@ -788,7 +788,7 @@ class Simulation:
         - triplets: An Nx3 np.array where the rows are triplets of particles that you want to make an angle between
         - stiffness: The stiffness of these angles
         Outputs:
-        - The number of these angles
+        - The ids of these angles
         """
         self._angle_type_iter += 1
 
@@ -928,7 +928,7 @@ class Simulation:
         particles: List[int] = None,
         type: int = None,
         n_bonds_per_grain: int = 3,
-        cutoff: float = None,
+        # cutoff: float = None,
     ) -> int:
         """
         TODO: Add cutoff
@@ -1159,7 +1159,7 @@ class Simulation:
         - type: A type or list of types of particle to move (output from methods like "add_grains")
 
         And:
-        xvel, yvel, zvel: The velocity in the x, y, and z directions to move that particle
+        - xvel, yvel, zvel: The velocity in the x, y, and z directions to move that particle
 
         Note: If you pass in 'None' to either xvel, yvel, or zvel, or leave them blank, those 
         velocities will not be mandated, and the particles will be free to move in those directions
@@ -1256,7 +1256,7 @@ class Simulation:
         particles - The particle or list of particles to which you want to add viscosity
 
         If you pass in neither particles nor type, all particles in the simulation get viscous
-        Returns: The number of the viscosity for if you want to remove this later
+        Returns: The id of the viscosity for if you want to remove this later
         """
 
         if not type is None and not particles is None:
@@ -1290,21 +1290,25 @@ class Simulation:
 
         return self._visc_iter
 
-    def remove_something(self, thing: str, number_of_that_thing: Union[List[int],int] = None):
+    def remove_something(self, thing: str, id_of_that_thing: Union[List[int],int] = None):
         """
         This removes something from the simulation. Inputs:
         - thing: The kind of thing you want to remove, currently supported things are "viscosity", "particles",
             "type", "bonds", "angles" "gravity", "perturbation", "move", and "walls"
-        - number_of_that_thing: The number of the thing you want to remove
+        - id_of_that_thing: The id of the thing you want to remove
 
-        If thing is ___ then number_of_that_thing is ___ :
-        - viscosity: the viscosity number
+        If thing is ___ then id_of_that_thing is ___ :
+        - viscosity: the viscosity id
         - particles: a list of particle ids
         - type: a type of particles
-        - bonds: if you pass in an int, number_of_that_thing is a type of bond. If you pass in a list, number_of_that_thing is a list of particles,
+        - gravity: don't pass in anything, just leave it set to None
+        - perturbation: the id of the perturbation
+        - move: the id of the move
+        - walls: the id of the wall
+        - bonds: if you pass in an int, id_of_that_thing is a type of bond. If you pass in a list, id_of_that_thing is a list of particles,
             the bonds between which will be deleted for example, if you pass in [1,2,3], all of the angles between particles 1,2, and 3 will be deleted.
             Be warned however, if particle 4 is bonded to particle 3, that bond will not be removed.
-        - angles: if you pass in an int, number_of_that_thing is a type of angle. If you pass in a list, number_of_that_thing is a list of particles,
+        - angles: if you pass in an int, id_of_that_thing is a type of angle. If you pass in a list, id_of_that_thing is a list of particles,
             the angles between which will be deleted, for example, if you pass in [1,2,3], all of the angles between particles 1,2, and 3 will be deleted.
             Be warned however, if particle 4 is angled to particle 3, that angle will not be removed.
 
@@ -1327,48 +1331,48 @@ class Simulation:
 
         with open(os.path.join(self._path, "in.main_file"), "a") as f:
             if thing == "viscosity":
-                f.write(f"unfix fix_viscosity_{number_of_that_thing}\n")
+                f.write(f"unfix fix_viscosity_{id_of_that_thing}\n")
             if thing == "gravity":
                 f.write(f"unfix grav\n")
             if thing == "perturbation":
-                f.write(f"unfix fix_perturb_{number_of_that_thing}\n")
+                f.write(f"unfix fix_perturb_{id_of_that_thing}\n")
             if thing == "move":
-                f.write(f"unfix fix_move_{number_of_that_thing}\n")
+                f.write(f"unfix fix_move_{id_of_that_thing}\n")
             if thing == "type":
-                index_drop = self._particles[ self._particles['type'] == number_of_that_thing ].index
+                index_drop = self._particles[ self._particles['type'] == id_of_that_thing ].index
                 self._particles.drop(index_drop , inplace=True)
-                f.write(f"group group_delete type {number_of_that_thing}\n")
+                f.write(f"group group_delete type {id_of_that_thing}\n")
                 f.write(f"delete_atoms group group_delete\n")
                 f.write(f"group group_delete delete\n")
             if thing == "particles":
-                self._particles.drop(index=number_of_that_thing, inplace=True)
-                if isinstance(number_of_that_thing,int):
-                    f.write(f"group group_delete id {number_of_that_thing}\n")
+                self._particles.drop(index=id_of_that_thing, inplace=True)
+                if isinstance(id_of_that_thing,int):
+                    f.write(f"group group_delete id {id_of_that_thing}\n")
                 else:
-                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in id_of_that_thing) + "\n")
                 f.write(f"delete_bonds group_delete multi any\n")
                 f.write(f"delete_atoms group group_delete\n")
                 f.write(f"group group_delete delete\n")
             if thing == "bonds":
-                if isinstance(number_of_that_thing,int):
-                    f.write(f"delete_bonds all bond {number_of_that_thing}\n")
+                if isinstance(id_of_that_thing,int):
+                    f.write(f"delete_bonds all bond {id_of_that_thing}\n")
                 else:
-                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in id_of_that_thing) + "\n")
                     f.write(f"delete_bonds group_delete bond 1*\n")
                     f.write(f"group group_delete delete\n")
             if thing == "angles":
-                if isinstance(number_of_that_thing,int):
-                    f.write(f"delete_bonds all angle {number_of_that_thing}\n")
+                if isinstance(id_of_that_thing,int):
+                    f.write(f"delete_bonds all angle {id_of_that_thing}\n")
                 else:
-                    f.write(f"group group_delete id " + " ".join(str(part) for part in number_of_that_thing) + "\n")
+                    f.write(f"group group_delete id " + " ".join(str(part) for part in id_of_that_thing) + "\n")
                     f.write(f"delete_bonds group_delete angle *\n")
                     f.write(f"group group_delete delete\n")
             if thing == "walls":
-                if self._walls[number_of_that_thing - 1][1]:
-                    f.write(f"unfix fix_walls_{number_of_that_thing}\n")
-                f.write(f"region region_{number_of_that_thing} delete\n")
-                if self._walls[number_of_that_thing - 1][0]:
-                    f.write(f"group group_wall_{number_of_that_thing} delete\n")
+                if self._walls[id_of_that_thing - 1][1]:
+                    f.write(f"unfix fix_walls_{id_of_that_thing}\n")
+                f.write(f"region region_{id_of_that_thing} delete\n")
+                if self._walls[id_of_that_thing - 1][0]:
+                    f.write(f"group group_wall_{id_of_that_thing} delete\n")
         pass
 
     def custom(self, statement: str):
@@ -1408,8 +1412,6 @@ class Simulation:
         self, dump_file_every_this_many_seconds: float, dump_list: List[str] = None
     ):
         """
-        Also mention that if we have already made the dump files, this just changes how often we print them
-
         This command makes it such that we output dump files, and it also decides what will be in those dump files. 
         If we have already called this function once in the script, then this does not re-design the dump files,
         rather, it simply allows you to change how often those dump files will be output.
