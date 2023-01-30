@@ -1,0 +1,67 @@
+atom_style hybrid angle sphere
+units si
+processors	* * 1
+comm_modify vel yes
+
+region simulationStation block -0.05 0.05 -0.015 0.015 -0.05 0.05
+create_box 100 simulationStation bond/types 100000 extra/bond/per/atom 100 angle/types 10000 extra/angle/per/atom 100
+change_box	all boundary f f f
+
+pair_style hybrid/overlay granular lj/cut 0
+pair_coeff  * * granular hertz/material 0 0 0 tangential linear_nohistory 0 0
+pair_coeff  * * lj/cut 0 0 0
+
+special_bonds lj/coul 0 1.0 1.0
+bond_style harmonic
+angle_style cosine
+
+bond_coeff * 0 0
+angle_coeff * 0
+fix integration all nve/sphere
+neigh_modify page 500000 one 50000
+
+
+### Here we will begin to include particles ###
+
+
+timestep 1e-07
+
+include beam_1.txt 
+set type 1 diameter 0.003
+set type 1 density 0.01
+bond_coeff 1 232.10526315789474 0.0019387755102040817
+include bonds_1.txt
+angle_coeff 1 0.0003481578947368421
+include angles_1.txt
+
+include grains_1.txt 
+set type 2 diameter 0.015
+set type 2 density 0.01
+
+include grains_2.txt 
+set type 3 diameter 0.015
+set type 3 density 0.01
+
+include connect_1.txt 
+
+include connect_2.txt 
+
+group group_move_1 id 1
+fix fix_move_1 group_move_1 move linear 0 0 0.01
+
+group group_move_2 id 50
+fix fix_move_2 group_move_2 move linear 0 0 -0.01
+
+group group_perturb_1 id 25
+fix fix_perturb_1 group_perturb_1 gravity 1e-05 vector 1 0 0
+pair_coeff 2 2 granular hertz/material 100000 0 0.5 tangential linear_nohistory 0 0
+pair_coeff 3 3 granular hertz/material 100000 0 0.5 tangential linear_nohistory 0 0
+
+fix fix_viscosity_1 all viscous 1e-06
+
+compute bendingE all pe/atom angle
+compute stretchingE all pe/atom bond
+dump pump all custom 1 out*.dump id type radius x y z fx fy fz c_bendingE c_stretchingE
+dump_modify pump pad 11
+dump_modify pump every 500000
+run 10000000

@@ -1,0 +1,68 @@
+group elastic_connect type 1
+
+
+group now id 51
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 2 1 ${mindist}
+create_bonds many now elastic_connect 2 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 3 1 ${mindist}
+create_bonds many now notTheClosest 3 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+
+
+group now id 52
+variable distances atom abs(sqrt((xcm(now,x)-x)^2+(xcm(now,y)-y)^2+(xcm(now,z)-z)^2))
+variable rnow equal sqrt((xcm(now,x))^2+(xcm(now,y))^2)
+compute cmindist elastic_connect reduce min v_distances
+thermo_style	custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 4 1 ${mindist}
+create_bonds many now elastic_connect 4 0 ${rhinow}
+variable xone equal xcm(now,x)
+variable yone equal xcm(now,y)
+variable zone equal xcm(now,z)
+region roneplus sphere ${xone} ${yone} ${zone} ${rhinow}
+group goneplus region roneplus
+group notTheClosest subtract all goneplus
+uncompute cmindist
+compute cmindist notTheClosest reduce min v_distances
+thermo_style custom step atoms time c_cmindist
+run 0
+thermo_style custom step atoms time
+variable mindist equal c_cmindist
+variable rhinow equal ${mindist}*1.0000001
+bond_coeff 5 1 ${mindist}
+create_bonds many now notTheClosest 5 0 ${rhinow}
+uncompute cmindist
+group now delete
+group notTheClosest delete
+group goneplus delete
+region roneplus delete
+group elastic_connect delete

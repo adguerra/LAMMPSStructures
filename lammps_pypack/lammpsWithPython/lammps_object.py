@@ -947,13 +947,15 @@ class Simulation:
 
         Note that this cannot be undone once it is done, unless you delete the particles or the surface
         """
-        self._connections_iter += 1
 
         if n_bonds_per_grain > 3:
             raise Exception(f"Can't do more than 3 bonds per grain, you tried to do {n_bonds_per_grain}")
         
         if not particles is None and not type is None:
             raise Exception("Can either pass in a list of particles, or a type of particles, not both")
+
+        self._have_run = True
+        self._connections_iter += 1
 
         ## If we get a type of particles, turn particles into a list of the particles of that type
         if not type is None:
@@ -1490,10 +1492,20 @@ class Simulation:
         and then have applied a fix move. That is, if you have already simulated something -- called the 
         run_simulation() method -- and then you call the move() method, LAMMPS freaks out, because it bases its
         movement calculation on the timestep. If you change the timestep, that calculation is now out of whack.
+        This can also happen if you have not run anything, but instead have called a function that runs something.
+        For example, if you call `connect_particles_to_elastic` before you set the timestep, then you move something,
+        and THEN you try to set the timestep, LAMMPS also freaks out, because inside of `connect_particles_to_elastic`
+        I have some `run 0`s. That is, I have to execute the run command within that function to get it to work
+        properly. SO, if you haven't run any of the simulation, AND you want to `connect_particles_to_elastic`,
+        AND you want to fix move, you will have to `manually_edit_timestep` before you call the `move` command
 
         Based on this, if you have both:
         - Already run some of the simulation, AND
-        - Applied a fix move
+        - called the move() command
+
+        OR
+        - connected particles to an elastic material
+        - called the move() command
         Then this method will not allow you to reset the timestep
         """
         if not self._timestep:

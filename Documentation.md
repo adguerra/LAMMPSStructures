@@ -487,12 +487,20 @@ There are two main ways that you can output information from LAMMPS during the s
     and then have applied a fix move. That is, if you have already simulated something -- called the 
     run_simulation() method -- and then you call the move() method, LAMMPS freaks out, because it bases its
     movement calculation on the timestep. If you change the timestep, that calculation is now out of whack.
+    This can also happen if you have not run anything, but instead have called a function that runs something.
+    For example, if you call `connect_particles_to_elastic` before you set the timestep, then you move something,
+    and THEN you try to set the timestep, LAMMPS also freaks out, because inside of `connect_particles_to_elastic`
+    I have some `run 0`s. That is, I have to execute the run command within that function to get it to work
+    properly. SO, if you haven't run any of the simulation, AND you want to `connect_particles_to_elastic`,
+    AND you want to fix move, you will have to `manually_edit_timestep` before you call the `move` command
 
     Based on this, if you have both:
-    - Already run some of the simulation, 
-    
-    AND
-    - Applied a fix move
+    - Already run some of the simulation, AND
+    - called the move() command
+
+    OR
+    - connected particles to an elastic material, AND
+    - called the move() command
     Then this method will not allow you to reset the timestep
 
 ### `custom`

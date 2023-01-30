@@ -1,0 +1,2 @@
+create_atoms 3 single 0.009 0.0 0.0075
+create_atoms 3 single 0.009 0.0 -0.0075
